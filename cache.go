@@ -24,8 +24,8 @@ import (
 	"time"
 )
 
-type ExpiringCacheEntry interface {
-	XCache(key string, expire time.Duration, value ExpiringCacheEntry)
+type expiringCacheEntry interface {
+	XCache(key string, expire time.Duration, value expiringCacheEntry)
 	Expire()
 	KeepAlive()
 }
@@ -38,11 +38,11 @@ type XEntry struct {
 }
 
 var (
-	xcache = make(map[string]ExpiringCacheEntry)
+	xcache = make(map[string]expiringCacheEntry)
 	cache  = make(map[string]interface{})
 )
 
-func (xe *XEntry) XCache(key string, expire time.Duration, value ExpiringCacheEntry) {
+func (xe *XEntry) XCache(key string, expire time.Duration, value expiringCacheEntry) {
 	xe.keepAlive = true
 	xe.key = key
 	xe.expire = expire
@@ -71,7 +71,7 @@ func (xe *XEntry) KeepAlive() {
 	xe.keepAlive = true
 }
 
-func GetXCached(key string) (ece ExpiringCacheEntry, err error) {
+func GetXCached(key string) (ece expiringCacheEntry, err error) {
 	if r, ok := xcache[key]; ok {
 		r.KeepAlive()
 		return r, nil
