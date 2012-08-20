@@ -58,6 +58,11 @@ func (xe *XEntry) KeepAlive() {
 	xe.keepAlive = true
 }
 
+// Delete all keys from expiraton cache
+func (xe *XEntry) Flush() {
+	xcache = make(map[string]expiringCacheEntry)
+}
+
 // Get an entry from the expiration cache and mark it for keeping alive
 func GetXCached(key string) (ece expiringCacheEntry, err error) {
 	if r, ok := xcache[key]; ok {
@@ -78,4 +83,9 @@ func GetCached(key string) (v interface{}, err error) {
 		return r, nil
 	}
 	return nil, errors.New("not found")
+}
+
+// Delete all keys from cache
+func Flush() {
+	cache = make(map[string]interface{})
 }
