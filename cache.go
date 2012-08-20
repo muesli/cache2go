@@ -9,6 +9,7 @@ import (
 
 type expiringCacheEntry interface {
 	XCache(key string, expire time.Duration, value expiringCacheEntry)
+	timer() *time.Timer
 	KeepAlive()
 }
 
@@ -19,11 +20,14 @@ type XEntry struct {
 	key            string
 	keepAlive      bool
 	expireDuration time.Duration
+	t              *time.Timer
 }
 
 var (
 	xcache = make(map[string]expiringCacheEntry)
+	xMux   sync.RWMutex
 	cache  = make(map[string]interface{})
+	mux    sync.RWMutex
 )
 
 // The main function to cache with expiration
@@ -31,7 +35,9 @@ func (xe *XEntry) XCache(key string, expire time.Duration, value expiringCacheEn
 	xe.keepAlive = true
 	xe.key = key
 	xe.expireDuration = expire
+	xMux.Lock()
 	xcache[key] = value
+	xMux.Unlock()
 	go xe.expire()
 }
 
@@ -41,14 +47,19 @@ func (xe *XEntry) expire() {
 		xe.Lock()
 		xe.keepAlive = false
 		xe.Unlock()
-		t := time.NewTimer(xe.expireDuration)
-		<-t.C
-		xe.Lock()
+		xe.t = time.NewTimer(xe.expireDuration)
+		<-xe.t.C
 		if !xe.keepAlive {
+			xMux.Lock()
 			delete(xcache, xe.key)
+			xMux.Unlock()
 		}
-		xe.Unlock()
 	}
+}
+
+// Getter for the timer
+func (xe *XEntry) timer() *time.Timer {
+	return xe.t
 }
 
 // Mark entry to be kept another expirationDuration period
@@ -58,13 +69,10 @@ func (xe *XEntry) KeepAlive() {
 	xe.keepAlive = true
 }
 
-// Delete all keys from expiraton cache
-func (xe *XEntry) Flush() {
-	xcache = make(map[string]expiringCacheEntry)
-}
-
 // Get an entry from the expiration cache and mark it for keeping alive
 func GetXCached(key string) (ece expiringCacheEntry, err error) {
+	xMux.RLock()
+	defer xMux.RUnlock()
 	if r, ok := xcache[key]; ok {
 		r.KeepAlive()
 		return r, nil
@@ -74,18 +82,36 @@ func GetXCached(key string) (ece expiringCacheEntry, err error) {
 
 // The function to be used to cache a key/value pair when expiration is not needed
 func Cache(key string, value interface{}) {
+	mux.Lock()
+	defer mux.Unlock()
 	cache[key] = value
 }
 
 // The function to extract a value for a key that never expire
 func GetCached(key string) (v interface{}, err error) {
+	mux.RLock()
+	defer mux.RUnlock()
 	if r, ok := cache[key]; ok {
 		return r, nil
 	}
 	return nil, errors.New("not found")
 }
 
+// Delete all keys from expiraton cache
+func XFlush() {
+	xMux.Lock()
+	defer xMux.Unlock()
+	for _, v := range xcache {
+		if v.timer() != nil {
+			v.timer().Stop()
+		}
+	}
+	xcache = make(map[string]expiringCacheEntry)
+}
+
 // Delete all keys from cache
 func Flush() {
+	mux.Lock()
+	defer mux.Unlock()
 	cache = make(map[string]interface{})
 }

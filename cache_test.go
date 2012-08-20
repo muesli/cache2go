@@ -70,3 +70,24 @@ func TestCacheKeepAlive(t *testing.T) {
 		t.Error("Error expiring data")
 	}
 }
+
+func TestFlush(t *testing.T) {
+	a := &myStruct{data: "mama are mere"}
+	a.XCache("mama", 10*time.Second, a)
+	time.Sleep(1000 * time.Millisecond)
+	XFlush()
+	b, err := GetXCached("mama")
+	if err == nil || b != nil {
+		t.Error("Error expiring data")
+	}
+}
+
+func TestFlushNoTimout(t *testing.T) {
+	a := &myStruct{data: "mama are mere"}
+	a.XCache("mama", 10*time.Second, a)
+	XFlush()
+	b, err := GetXCached("mama")
+	if err == nil || b != nil {
+		t.Error("Error expiring data")
+	}
+}
