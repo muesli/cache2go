@@ -1,5 +1,5 @@
 //Simple caching library with expiration capabilities
-package cache
+package cache2go
 
 import (
 	"errors"
