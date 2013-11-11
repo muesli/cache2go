@@ -12,7 +12,6 @@ import (
 type CacheEntry struct {
 	sync.Mutex
 	key            string
-	keepAlive      bool
 	expireDuration time.Duration
 	expiringSince  time.Time
 	data           interface{}
@@ -140,7 +139,6 @@ func (table *CacheTable) expirationCheck() {
 // removing this item from the cache
 func (table *CacheTable) Cache(key string, expire time.Duration, data interface{}, aboutToExpireFunc func(string)) {
 	entry := CacheEntry{}
-	entry.keepAlive = true
 	entry.key = key
 	entry.expireDuration = expire
 	entry.expiringSince = time.Now()
