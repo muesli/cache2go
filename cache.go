@@ -41,7 +41,7 @@ func (xe *XEntry) XCache(key string, expire time.Duration, value expiringCacheEn
 	go xe.expire()
 }
 
-// The internal mechanism for expiartion
+// The internal mechanism for expiration
 func (xe *XEntry) expire() {
 	for xe.keepAlive {
 		xe.Lock()
