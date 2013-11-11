@@ -28,6 +28,9 @@ type CacheTable struct {
 	items           map[interface{}]*CacheEntry
 	cleanupTimer    *time.Timer
 	cleanupInterval time.Duration
+
+	// Callback method triggered when trying to load a non-existing key
+	loadData func(interface{}) *CacheEntry
 }
 
 var (
@@ -98,6 +101,12 @@ func (table *CacheTable) CacheCount() int {
 	return len(table.items)
 }
 
+// Configures a data-loader callback, which will be called when trying
+// to use access a non-existing key
+func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheEntry) {
+	table.loadData = f
+}
+
 // Expiration check loop, triggered by a self-adjusting timer
 func (table *CacheTable) expirationCheck() {
 	table.Lock()
@@ -151,13 +160,7 @@ func (table *CacheTable) expirationCheck() {
  / removing this item from the cache
 */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(interface{})) {
-	entry := CacheEntry{}
-	entry.key = key
-	entry.lifeSpan = lifeSpan
-	entry.createdOn = time.Now()
-	entry.accessedOn = entry.createdOn
-	entry.aboutToExpire = aboutToExpireFunc
-	entry.data = data
+	entry := CreateCacheEntry(key, lifeSpan, data, aboutToExpireFunc)
 
 	table.Lock()
 	table.items[key] = &entry
@@ -173,12 +176,40 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 // Get an entry from the cache and mark it to be kept alive
 func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	table.RLock()
-	defer table.RUnlock()
 	if r, ok := table.items[key]; ok {
+		defer table.RUnlock()
+
 		r.KeepAlive()
 		return r, nil
+	} else {
+		table.RUnlock()
+
+		if table.loadData != nil {
+			item := table.loadData(key)
+			if item != nil {
+				return item, nil
+			} else {
+				return nil, errors.New("Key not found and could not be loaded into cache")
+			}
+		}
 	}
+
 	return nil, errors.New("Key not found in cache")
+}
+
+// Returns a newly created CacheEntry
+func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(interface{})) CacheEntry {
+	t := time.Now()
+	entry := CacheEntry{
+		key: key,
+		lifeSpan: lifeSpan,
+		createdOn: t,
+		accessedOn: t,
+		aboutToExpire: aboutToExpireFunc,
+		data: data,
+	}
+
+	return entry
 }
 
 // Delete all items from cache
