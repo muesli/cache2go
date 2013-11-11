@@ -112,3 +112,21 @@ func TestMassive(t *testing.T) {
 		t.Error("Data count mismatch")
 	}
 }
+
+func TestDataLoader(t *testing.T) {
+	table := Cache("dataLoaderTest")
+	table.SetDataLoader(func(key interface{}) *CacheEntry{
+		val := "test_" + key.(string)
+		entry := CreateCacheEntry(key, 500*time.Millisecond, val, nil)
+		return &entry
+	})
+
+	for i := 0; i < 10; i++ {
+		key := "test_" + strconv.Itoa(i)
+		vp := "test_" + key
+		p, err := table.Value(key)
+		if err != nil || p == nil || p.Data().(string) != vp {
+			t.Error("Error validating data loader")
+		}
+	}
+}
