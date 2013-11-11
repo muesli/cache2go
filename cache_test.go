@@ -16,19 +16,19 @@ func init() {
 
 func TestCache(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
-	a.XCache("mama", 1*time.Second, a)
+	a.XCache("mama", 1*time.Second, a, nil)
 	b, err := GetXCached("mama")
 	if err != nil || b == nil || b != a {
-		t.Error("Error retriving data from cache", err)
+		t.Error("Error retrieving data from cache", err)
 	}
 }
 
 func TestCacheExpire(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
-	a.XCache("mama", 1*time.Second, a)
+	a.XCache("mama", 1*time.Second, a, nil)
 	b, err := GetXCached("mama")
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere" {
-		t.Error("Error retriving data from cache", err)
+		t.Error("Error retrieving data from cache", err)
 	}
 	time.Sleep(2001 * time.Millisecond)
 	b, err = GetXCached("mama")
@@ -39,10 +39,10 @@ func TestCacheExpire(t *testing.T) {
 
 func TestCacheKeepAlive(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
-	a.XCache("mama", 1*time.Second, a)
+	a.XCache("mama", 1*time.Second, a, nil)
 	b, err := GetXCached("mama")
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere" {
-		t.Error("Error retriving data from cache", err)
+		t.Error("Error retrieving data from cache", err)
 	}
 	time.Sleep(500 * time.Millisecond)
 	b.KeepAlive()
@@ -55,7 +55,7 @@ func TestCacheKeepAlive(t *testing.T) {
 
 func TestFlush(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
-	a.XCache("mama", 10*time.Second, a)
+	a.XCache("mama", 10*time.Second, a, nil)
 	time.Sleep(1000 * time.Millisecond)
 	XFlush()
 	b, err := GetXCached("mama")
@@ -66,7 +66,7 @@ func TestFlush(t *testing.T) {
 
 func TestFlushNoTimout(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
-	a.XCache("mama", 10*time.Second, a)
+	a.XCache("mama", 10*time.Second, a, nil)
 	XFlush()
 	b, err := GetXCached("mama")
 	if err == nil || b != nil {
