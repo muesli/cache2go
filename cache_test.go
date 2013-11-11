@@ -26,7 +26,7 @@ func TestCacheExpire(t *testing.T) {
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere" {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(1100 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 	b, err = GetXCached("mama")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
@@ -37,14 +37,14 @@ func TestCacheKeepAlive(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
 	a.XCache("mama", 1*time.Second, a, nil)
 	a = &myStruct{data: "mama are mere2"}
-	a.XCache("mama2", 2*time.Second, a, nil)
+	a.XCache("mama2", 3*time.Second, a, nil)
 	b, err := GetXCached("mama")
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere" {
 		t.Error("Error retrieving data from cache", err)
 	}
 	time.Sleep(500 * time.Millisecond)
 	b.KeepAlive()
-	time.Sleep(1100 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 	b, err = GetXCached("mama")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
@@ -53,7 +53,7 @@ func TestCacheKeepAlive(t *testing.T) {
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere2" {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(2100 * time.Millisecond)
+	time.Sleep(3500 * time.Millisecond)
 	b, err = GetXCached("mama2")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
