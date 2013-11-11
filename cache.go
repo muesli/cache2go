@@ -36,50 +36,6 @@ var (
 	mux    sync.RWMutex
 )
 
-// Expiration check loop, triggered by a self-adjusting timer
-func expirationCheck(table string) {
-	xmux.RLock()
-	t := xcache[table]
-	xmux.RUnlock()
-
-	t.Lock()
-	if t.expTimer != nil {
-		t.expTimer.Stop()
-	}
-
-	// Take a copy of xcache so we can iterate over it without blocking the mutex
-	cc := t.Items
-	t.Unlock()
-
-	// To be more accurate with timers, we would need to update 'now' on every
-	// loop iteration. Not sure it's really efficient though.
-	now := time.Now()
-	smallestDuration := 0 * time.Second
-	for key, c := range cc {
-		if now.Sub(c.expiringSince) >= c.expireDuration {
-			t.Lock()
-			if c.aboutToExpire != nil {
-				c.aboutToExpire(key)
-			}
-			delete(t.Items, key)
-			t.Unlock()
-		} else {
-			if smallestDuration == 0 || c.ExpireDuration() < smallestDuration {
-				smallestDuration = c.ExpireDuration() - now.Sub(c.ExpiringSince())
-			}
-		}
-	}
-
-	t.Lock()
-	t.expDuration = smallestDuration
-	if smallestDuration > 0 {
-		t.expTimer = time.AfterFunc(smallestDuration, func() {
-			go expirationCheck(table)
-		})
-	}
-	t.Unlock()
-}
-
 // Mark entry to be kept for another expirationDuration period
 func (xe *XEntry) KeepAlive() {
 	xe.Lock()
@@ -108,14 +64,8 @@ func (xe *XEntry) Data() interface{} {
 	return xe.data
 }
 
-// Returns how many items are currently stored in the expiration cache
-func (xc *XCache) XCacheCount() int {
-	xc.RLock()
-	defer xc.RUnlock()
-
-	return len(xc.Items)
-}
-
+// Returns the existing cache table with given name or creates a new one
+// if the table does not exist yet
 func CacheTable(table string) *XCache {
 	xmux.RLock()
 	t, ok := xcache[table]
@@ -132,6 +82,54 @@ func CacheTable(table string) *XCache {
 	}
 
 	return t
+}
+
+// Returns how many items are currently stored in the expiration cache
+func (xc *XCache) XCacheCount() int {
+	xc.RLock()
+	defer xc.RUnlock()
+
+	return len(xc.Items)
+}
+
+// Expiration check loop, triggered by a self-adjusting timer
+func (xc *XCache) expirationCheck() {
+	xc.Lock()
+	if xc.expTimer != nil {
+		xc.expTimer.Stop()
+	}
+
+	// Take a copy of xcache so we can iterate over it without blocking the mutex
+	cc := xc.Items
+	xc.Unlock()
+
+	// To be more accurate with timers, we would need to update 'now' on every
+	// loop iteration. Not sure it's really efficient though.
+	now := time.Now()
+	smallestDuration := 0 * time.Second
+	for key, c := range cc {
+		if now.Sub(c.expiringSince) >= c.expireDuration {
+			xc.Lock()
+			if c.aboutToExpire != nil {
+				c.aboutToExpire(key)
+			}
+			delete(xc.Items, key)
+			xc.Unlock()
+		} else {
+			if smallestDuration == 0 || c.ExpireDuration() < smallestDuration {
+				smallestDuration = c.ExpireDuration() - now.Sub(c.ExpiringSince())
+			}
+		}
+	}
+
+	xc.Lock()
+	xc.expDuration = smallestDuration
+	if smallestDuration > 0 {
+		xc.expTimer = time.AfterFunc(smallestDuration, func() {
+			go xc.expirationCheck()
+		})
+	}
+	xc.Unlock()
 }
 
 // Adds an expiring key/value pair to the cache
@@ -154,7 +152,7 @@ func (xc *XCache) XCache(key string, expire time.Duration, data interface{}, abo
 
 	// If we haven't set up any expiration check timer or found a more imminent item
 	if expDur == 0 || expire < expDur {
-		expirationCheck(xc.Name)
+		xc.expirationCheck()
 	}
 }
 
