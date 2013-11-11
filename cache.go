@@ -32,6 +32,7 @@ var (
 	xMux         sync.RWMutex
 	mux          sync.RWMutex
 	expTimer     *time.Timer
+
 	ExpireCheckInterval = 30 * time.Second
 )
 
@@ -40,10 +41,6 @@ func init() {
 }
 
 func expirationCheck() {
-	go removeExpiredEntries()
-}
-
-func removeExpiredEntries() {
 	// Take a copy of xcache so we can iterate over it without blocking the mutex
 	xMux.Lock()
 	cache := xcache
@@ -59,7 +56,9 @@ func removeExpiredEntries() {
 		}
 	}
 
-	expTimer = time.AfterFunc(ExpireCheckInterval, expirationCheck)
+	expTimer = time.AfterFunc(ExpireCheckInterval, func() {
+		go expirationCheck()
+	})
 }
 
 // The main function to cache with expiration
