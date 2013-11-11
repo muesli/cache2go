@@ -11,21 +11,21 @@ import (
 // data contains the user-set value in the cache
 type CacheEntry struct {
 	sync.Mutex
-	key            string
+	key            interface{}
+	data           interface{}
 	lifeSpan       time.Duration
 	createdOn      time.Time
 	accessedOn     time.Time
-	data           interface{}
 
 	// Callback method triggered right before removing the item from the cache
-	aboutToExpire func(string)
+	aboutToExpire func(interface{})
 }
 
 // Structure of a table with items in the cache
 type CacheTable struct {
 	sync.RWMutex
 	name            string
-	items           map[string]*CacheEntry
+	items           map[interface{}]*CacheEntry
 	cleanupTimer    *time.Timer
 	cleanupInterval time.Duration
 }
@@ -80,7 +80,7 @@ func Cache(table string) *CacheTable {
 	if !ok {
 		t = &CacheTable{
 			name:  table,
-			items: make(map[string]*CacheEntry),
+			items: make(map[interface{}]*CacheEntry),
 		}
 		mutex.Lock()
 		cache[table] = t
@@ -150,7 +150,7 @@ func (table *CacheTable) expirationCheck() {
  / will be called (with this item's key as its only parameter), right before
  / removing this item from the cache
 */
-func (table *CacheTable) Cache(key string, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(string)) {
+func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(interface{})) {
 	entry := CacheEntry{}
 	entry.key = key
 	entry.lifeSpan = lifeSpan
@@ -171,7 +171,7 @@ func (table *CacheTable) Cache(key string, lifeSpan time.Duration, data interfac
 }
 
 // Get an entry from the cache and mark it to be kept alive
-func (table *CacheTable) Value(key string) (*CacheEntry, error) {
+func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	table.RLock()
 	defer table.RUnlock()
 	if r, ok := table.items[key]; ok {
@@ -186,7 +186,7 @@ func (table *CacheTable) Flush() {
 	table.Lock()
 	defer table.Unlock()
 
-	table.items = make(map[string]*CacheEntry)
+	table.items = make(map[interface{}]*CacheEntry)
 	table.cleanupInterval = 0
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()

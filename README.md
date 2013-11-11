@@ -36,9 +36,9 @@ func main() {
     val := myStruct{"This is a test!", []byte{}}
 
     // We will put the item in the cache
-    cache.Cache("someKey", 5 * time.Second, &val, func(key string){
-        v, _ := cache.Value(key)
-        fmt.Println("Deleting:", key, v.Data().(*myStruct).text, v.CreatedOn())
+    cache.Cache("someKey", 5 * time.Second, &val, func(key interface{}){
+        v, _ := cache.Value(key.(string))
+        fmt.Println("Deleting:", key.(string), v.Data().(*myStruct).text, v.CreatedOn())
     })
 
     // Let's retrieve the item from the cache
