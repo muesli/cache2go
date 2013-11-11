@@ -18,16 +18,16 @@ type CacheEntry struct {
 	data           interface{}
 
 	// Callback method triggered right before removing the item from the cache
-	aboutToExpire  func(string)
+	aboutToExpire func(string)
 }
 
 // Structure of a table with items in the cache
 type CacheTable struct {
 	sync.RWMutex
-	name           string
-	items          map[string]*CacheEntry
-	expTimer       *time.Timer
-	expDuration    time.Duration
+	name        string
+	items       map[string]*CacheEntry
+	expTimer    *time.Timer
+	expDuration time.Duration
 }
 
 var (
@@ -72,7 +72,7 @@ func Cache(table string) *CacheTable {
 
 	if !ok {
 		t = &CacheTable{
-			name: table,
+			name:  table,
 			items: make(map[string]*CacheEntry),
 		}
 		mutex.Lock()
@@ -153,7 +153,7 @@ func (table *CacheTable) Cache(key string, expire time.Duration, data interface{
 	table.Unlock()
 
 	// If we haven't set up any expiration check timer or found a more imminent item
-	if expire > 0 && ( expDur == 0 || expire < expDur ) {
+	if expire > 0 && (expDur == 0 || expire < expDur) {
 		table.expirationCheck()
 	}
 }
