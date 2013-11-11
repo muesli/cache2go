@@ -29,36 +29,43 @@ type XEntry struct {
 var (
 	xcache = make(map[string]expiringCacheEntry)
 	cache  = make(map[string]interface{})
-	xMux         sync.RWMutex
-	mux          sync.RWMutex
-	expTimer     *time.Timer
-
-	ExpireCheckInterval = 30 * time.Second
+	xMux        sync.RWMutex
+	mux         sync.RWMutex
+	expTimer    *time.Timer
+	expDuration = 0 * time.Second
 )
 
-func init() {
-	expirationCheck()
-}
-
 func expirationCheck() {
+	if expTimer != nil {
+		expTimer.Stop()
+	}
+
 	// Take a copy of xcache so we can iterate over it without blocking the mutex
 	xMux.Lock()
 	cache := xcache
 	xMux.Unlock()
 
 	now := time.Now()
+	smallestDuration := 0 * time.Second
 	for key, c := range cache {
 		if now.Sub(c.ExpiringSince()) >= c.ExpireDuration() {
 			xMux.Lock()
 			c.AboutToExpire()
 			delete(xcache, key)
 			xMux.Unlock()
+		} else {
+			if smallestDuration == 0 || c.ExpireDuration() < smallestDuration {
+				smallestDuration = c.ExpireDuration() - now.Sub(c.ExpiringSince())
+			}
 		}
 	}
 
-	expTimer = time.AfterFunc(ExpireCheckInterval, func() {
-		go expirationCheck()
-	})
+	expDuration = smallestDuration
+	if smallestDuration > 0 {
+		expTimer = time.AfterFunc(expDuration, func() {
+			go expirationCheck()
+		})
+	}
 }
 
 // The main function to cache with expiration
@@ -70,8 +77,12 @@ func (xe *XEntry) XCache(key string, expire time.Duration, value expiringCacheEn
 	xe.aboutToExpire = aboutToExpireFunc
 
 	xMux.Lock()
-	defer xMux.Unlock()
 	xcache[key] = value
+	xMux.Unlock()
+
+	if expDuration == 0 || expire < expDuration {
+		expirationCheck()
+	}
 }
 
 // Mark entry to be kept for another expirationDuration period
@@ -136,12 +147,18 @@ func GetCached(key string) (v interface{}, err error) {
 func XFlush() {
 	xMux.Lock()
 	defer xMux.Unlock()
+
 	xcache = make(map[string]expiringCacheEntry)
+	expDuration = 0
+	if expTimer != nil {
+		expTimer.Stop()
+	}
 }
 
 // Delete all keys from cache
 func Flush() {
 	mux.Lock()
 	defer mux.Unlock()
+
 	cache = make(map[string]interface{})
 }
