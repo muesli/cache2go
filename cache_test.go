@@ -10,6 +10,10 @@ type myStruct struct {
 	data string
 }
 
+func init() {
+	ExpireCheckInterval = 1 * time.Second
+}
+
 func TestCache(t *testing.T) {
 	a := &myStruct{data: "mama are mere"}
 	a.XCache("mama", 1*time.Second, a)
@@ -26,7 +30,7 @@ func TestCacheExpire(t *testing.T) {
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere" {
 		t.Error("Error retriving data from cache", err)
 	}
-	time.Sleep(1001 * time.Millisecond)
+	time.Sleep(2001 * time.Millisecond)
 	b, err = GetXCached("mama")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
@@ -42,11 +46,7 @@ func TestCacheKeepAlive(t *testing.T) {
 	}
 	time.Sleep(500 * time.Millisecond)
 	b.KeepAlive()
-	time.Sleep(501 * time.Millisecond)
-	if err != nil {
-		t.Error("Error keeping cached data alive", err)
-	}
-	time.Sleep(1000 * time.Millisecond)
+	time.Sleep(2001 * time.Millisecond)
 	b, err = GetXCached("mama")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
