@@ -53,7 +53,7 @@ func TestCacheKeepAlive(t *testing.T) {
 	if err != nil || b == nil || b.(*myStruct).data != "mama are mere2" {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(2001 * time.Millisecond)
+	time.Sleep(2100 * time.Millisecond)
 	b, err = GetXCached("mama2")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
