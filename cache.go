@@ -13,8 +13,8 @@ type expiringCacheEntry interface {
 	KeepAlive()
 }
 
-// Structure that must be embeded in the objectst that must be cached with expiration.
-// If the expiration is not needed this can be ignored
+// Structure that must be embedded in the object that should be cached with expiration
+// If no expiration is desired this can be ignored
 type XEntry struct {
 	sync.Mutex
 	key            string
@@ -62,14 +62,14 @@ func (xe *XEntry) timer() *time.Timer {
 	return xe.t
 }
 
-// Mark entry to be kept another expirationDuration period
+// Mark entry to be kept for another expirationDuration period
 func (xe *XEntry) KeepAlive() {
 	xe.Lock()
 	defer xe.Unlock()
 	xe.keepAlive = true
 }
 
-// Get an entry from the expiration cache and mark it for keeping alive
+// Get an entry from the expiration cache and mark it to be kept alive
 func GetXCached(key string) (ece expiringCacheEntry, err error) {
 	xMux.RLock()
 	defer xMux.RUnlock()
@@ -87,7 +87,7 @@ func Cache(key string, value interface{}) {
 	cache[key] = value
 }
 
-// The function to extract a value for a key that never expire
+// The function to extract a value for a key that never expires
 func GetCached(key string) (v interface{}, err error) {
 	mux.RLock()
 	defer mux.RUnlock()
