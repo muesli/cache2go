@@ -86,6 +86,7 @@ func (xe *XEntry) XCache(key string, expire time.Duration, value ExpiringCacheEn
 	xcache[key] = value
 	xMux.Unlock()
 
+	// If we haven't set up any expiration check timer or found a more imminent item
 	if expDuration == 0 || expire < expDuration {
 		expirationCheck()
 	}
@@ -112,7 +113,7 @@ func (xe *XEntry) ExpiringSince() time.Time {
 	return xe.expiringSince
 }
 
-// Returns since when this entry is expiring
+// Triggers an optional callback right before an item gets deleted
 func (xe *XEntry) AboutToExpire() {
 	if xe.aboutToExpire != nil {
 		xe.Lock()
