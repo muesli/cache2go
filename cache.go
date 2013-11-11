@@ -104,6 +104,22 @@ func (xe *XEntry) AboutToExpire() {
 	}
 }
 
+// Returns how many items are currently stored in the expiration cache
+func XCacheCount() int {
+	xMux.Lock()
+	defer xMux.Unlock()
+
+	return len(xcache)
+}
+
+// Returns how many items are currently stored in the non-expiring cache
+func CacheCount() int {
+	mux.Lock()
+	defer mux.Unlock()
+
+	return len(cache)
+}
+
 // Adds an expiring key/value pair to the cache
 // The last parameter abouToExpireFunc can be nil. Otherwise abouToExpireFunc
 // will be called (with this item's key as its only parameter), right before
