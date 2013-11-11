@@ -74,24 +74,6 @@ func expirationCheck() {
 	}
 }
 
-// The main function to cache with expiration
-func (xe *XEntry) XCache(key string, expire time.Duration, value ExpiringCacheEntry, aboutToExpireFunc func(string)) {
-	xe.keepAlive = true
-	xe.key = key
-	xe.expireDuration = expire
-	xe.expiringSince = time.Now()
-	xe.aboutToExpire = aboutToExpireFunc
-
-	xMux.Lock()
-	xcache[key] = value
-	xMux.Unlock()
-
-	// If we haven't set up any expiration check timer or found a more imminent item
-	if expDuration == 0 || expire < expDuration {
-		expirationCheck()
-	}
-}
-
 // Mark entry to be kept for another expirationDuration period
 func (xe *XEntry) KeepAlive() {
 	xe.Lock()
@@ -122,6 +104,27 @@ func (xe *XEntry) AboutToExpire() {
 	}
 }
 
+// Adds an expiring key/value pair to the cache
+// The last parameter abouToExpireFunc can be nil. Otherwise abouToExpireFunc
+// will be called (with this item's key as its only parameter), right before
+// removing this item from the cache.
+func (xe *XEntry) XCache(key string, expire time.Duration, value ExpiringCacheEntry, aboutToExpireFunc func(string)) {
+	xe.keepAlive = true
+	xe.key = key
+	xe.expireDuration = expire
+	xe.expiringSince = time.Now()
+	xe.aboutToExpire = aboutToExpireFunc
+
+	xMux.Lock()
+	xcache[key] = value
+	xMux.Unlock()
+
+	// If we haven't set up any expiration check timer or found a more imminent item
+	if expDuration == 0 || expire < expDuration {
+		expirationCheck()
+	}
+}
+
 // Get an entry from the expiration cache and mark it to be kept alive
 func GetXCached(key string) (ece ExpiringCacheEntry, err error) {
 	xMux.RLock()
@@ -130,7 +133,7 @@ func GetXCached(key string) (ece ExpiringCacheEntry, err error) {
 		r.KeepAlive()
 		return r, nil
 	}
-	return nil, errors.New("not found")
+	return nil, errors.New("Key not found in cache")
 }
 
 // Adds a non-expiring key/value pair to the cache
@@ -147,7 +150,7 @@ func GetCached(key string) (v interface{}, err error) {
 	if r, ok := cache[key]; ok {
 		return r, nil
 	}
-	return nil, errors.New("not found")
+	return nil, errors.New("Key not found in cache")
 }
 
 // Delete all keys from expiraton cache
