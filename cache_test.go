@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestCache(t *testing.T) {
@@ -29,6 +28,17 @@ func TestCacheExpire(t *testing.T) {
 	b, err = table.GetXCached("test")
 	if err == nil || b != nil {
 		t.Error("Error expiring data")
+	}
+}
+
+func TestCacheNonExpiring(t *testing.T) {
+	table := CacheTable("table")
+	a := "testy test"
+	table.XCache("test", 0, a, nil)
+	time.Sleep(500 * time.Millisecond)
+	b, err := table.GetXCached("test")
+	if err != nil || b == nil || b.Data().(string) != a {
+		t.Error("Error retrieving data from cache", err)
 	}
 }
 
@@ -84,26 +94,21 @@ func TestFlushNoTimout(t *testing.T) {
 }
 
 func TestMassive(t *testing.T) {
-	return
-
 	table := CacheTable("table")
 	val := "testy test"
-	for i := 0; i < 100000; i++ {
+	count := 100000
+	for i := 0; i < count; i++ {
 		key := "test_" + strconv.Itoa(i)
-		table.XCache(key, 1*time.Second, val, nil)
+		table.XCache(key, 2*time.Second, val, nil)
 	}
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < count; i++ {
 		key := "test_" + strconv.Itoa(i)
 		d, err := table.GetXCached(key)
 		if err != nil || d == nil || d.Data().(string) != val {
 			t.Error("Error retrieving data")
-			panic(err)
 		}
 	}
-
-	fmt.Println("In Cache:", table.XCacheCount())
-	time.Sleep(1000 * time.Millisecond)
-	fmt.Println("In Cache:", table.XCacheCount())
-	time.Sleep(1500 * time.Millisecond)
-	fmt.Println("In Cache:", table.XCacheCount())
+	if table.XCacheCount() != count {
+		t.Error("Data count mismatch")
+	}
 }
