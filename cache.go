@@ -9,8 +9,9 @@ import (
 
 type expiringCacheEntry interface {
 	XCache(key string, expire time.Duration, value expiringCacheEntry)
-	timer() *time.Timer
 	KeepAlive()
+	ExpiringSince() time.Time
+	ExpireDuration() time.Duration
 }
 
 // Structure that must be embedded in the object that should be cached with expiration
@@ -20,53 +21,75 @@ type XEntry struct {
 	key            string
 	keepAlive      bool
 	expireDuration time.Duration
-	t              *time.Timer
+	expiringSince  time.Time
 }
 
 var (
 	xcache = make(map[string]expiringCacheEntry)
-	xMux   sync.RWMutex
 	cache  = make(map[string]interface{})
-	mux    sync.RWMutex
+	xMux         sync.RWMutex
+	mux          sync.RWMutex
+	expTimer     *time.Timer
+	ExpireCheckInterval = 30 * time.Second
 )
+
+func init() {
+	expirationCheck()
+}
+
+func expirationCheck() {
+	go removeExpiredEntries()
+}
+
+func removeExpiredEntries() {
+	// Take a copy of xcache so we can iterate over it without blocking the mutex
+	xMux.Lock()
+	cache := xcache
+	xMux.Unlock()
+
+	now := time.Now()
+	for key, c := range cache {
+		if now.Sub(c.ExpiringSince()) >= c.ExpireDuration() {
+			xMux.Lock()
+			delete(xcache, key)
+			xMux.Unlock()
+		}
+	}
+
+	expTimer = time.AfterFunc(ExpireCheckInterval, expirationCheck)
+}
 
 // The main function to cache with expiration
 func (xe *XEntry) XCache(key string, expire time.Duration, value expiringCacheEntry) {
 	xe.keepAlive = true
 	xe.key = key
 	xe.expireDuration = expire
+	xe.expiringSince = time.Now()
+
 	xMux.Lock()
+	defer xMux.Unlock()
 	xcache[key] = value
-	xMux.Unlock()
-	go xe.expire()
-}
-
-// The internal mechanism for expiration
-func (xe *XEntry) expire() {
-	for xe.keepAlive {
-		xe.Lock()
-		xe.keepAlive = false
-		xe.Unlock()
-		xe.t = time.NewTimer(xe.expireDuration)
-		<-xe.t.C
-		if !xe.keepAlive {
-			xMux.Lock()
-			delete(xcache, xe.key)
-			xMux.Unlock()
-		}
-	}
-}
-
-// Getter for the timer
-func (xe *XEntry) timer() *time.Timer {
-	return xe.t
 }
 
 // Mark entry to be kept for another expirationDuration period
 func (xe *XEntry) KeepAlive() {
 	xe.Lock()
 	defer xe.Unlock()
-	xe.keepAlive = true
+	xe.expiringSince = time.Now()
+}
+
+// Returns this entry's expiration duration
+func (xe *XEntry) ExpireDuration() time.Duration {
+	xe.Lock()
+	defer xe.Unlock()
+	return xe.expireDuration
+}
+
+// Returns since when this entry is expiring
+func (xe *XEntry) ExpiringSince() time.Time {
+	xe.Lock()
+	defer xe.Unlock()
+	return xe.expiringSince
 }
 
 // Get an entry from the expiration cache and mark it to be kept alive
@@ -101,11 +124,6 @@ func GetCached(key string) (v interface{}, err error) {
 func XFlush() {
 	xMux.Lock()
 	defer xMux.Unlock()
-	for _, v := range xcache {
-		if v.timer() != nil {
-			v.timer().Stop()
-		}
-	}
 	xcache = make(map[string]expiringCacheEntry)
 }
 
