@@ -38,7 +38,7 @@ func main() {
     // We will put the item in the cache
     cache.Cache("someKey", 5 * time.Second, &val, func(key string){
         v, _ := cache.Value(key)
-        fmt.Println("Deleting from cache:", key, v.Data().(*myStruct).text, v.CreatedOn())
+        fmt.Println("Deleting:", key, v.Data().(*myStruct).text, v.CreatedOn())
     })
 
     // Let's retrieve the item from the cache
