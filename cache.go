@@ -1,4 +1,4 @@
-//Simple caching library with expiration capabilities
+// Simple caching library with expiration capabilities
 package cache2go
 
 import (
