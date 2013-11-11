@@ -1,9 +1,9 @@
 cache2go
-=====
+========
 
-Golang simple object caching library with expiration capabilities.
+Simple golang object caching library with expiration capabilities.
 
-See the test file for wroking examples.
+See the test file for working examples.
 
 API docs [here](http://go.pkgdoc.org/github.com/rif/cache2go).
 
