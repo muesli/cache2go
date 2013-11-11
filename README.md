@@ -62,7 +62,7 @@ To run the application, put the code in a file called mycachedapp.go and run:
 
     go run mycachedapp.go
 
-See the test file for further working examples.
+See the cache_test.go for further working examples.
 
 ## Development
 API docs can be found [here](http://go.pkgdoc.org/github.com/rif/cache2go).
