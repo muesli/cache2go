@@ -32,11 +32,9 @@ type XCache struct {
 var (
 	xcache = make(map[string]*XCache)
 	xmux   sync.RWMutex
-	cache  = make(map[string]interface{})
-	mux    sync.RWMutex
 )
 
-// Mark entry to be kept for another expirationDuration period
+// Mark entry to be kept for another expireDuration period
 func (xe *XEntry) KeepAlive() {
 	xe.Lock()
 	defer xe.Unlock()
@@ -108,6 +106,9 @@ func (xc *XCache) expirationCheck() {
 	now := time.Now()
 	smallestDuration := 0 * time.Second
 	for key, c := range cc {
+		if c.expireDuration == 0 {
+			continue
+		}
 		if now.Sub(c.expiringSince) >= c.expireDuration {
 			xc.Lock()
 			if c.aboutToExpire != nil {
@@ -151,7 +152,7 @@ func (xc *XCache) XCache(key string, expire time.Duration, data interface{}, abo
 	xc.Unlock()
 
 	// If we haven't set up any expiration check timer or found a more imminent item
-	if expDur == 0 || expire < expDur {
+	if expire > 0 && ( expDur == 0 || expire < expDur ) {
 		xc.expirationCheck()
 	}
 }
@@ -181,37 +182,4 @@ func (xc *XCache) XFlush() {
 	xmux.Lock()
 	defer xmux.Unlock()
 	delete(xcache, xc.Name)
-}
-
-// Adds a non-expiring key/value pair to the cache
-func Cache(key string, value interface{}) {
-	mux.Lock()
-	defer mux.Unlock()
-	cache[key] = value
-}
-
-// Extracts a value for a given non-expiring key
-func GetCached(key string) (v interface{}, err error) {
-	mux.RLock()
-	defer mux.RUnlock()
-	if r, ok := cache[key]; ok {
-		return r, nil
-	}
-	return nil, errors.New("Key not found in cache")
-}
-
-// Delete all keys from non-expiring cache
-func Flush() {
-	mux.Lock()
-	defer mux.Unlock()
-
-	cache = make(map[string]interface{})
-}
-
-// Returns how many items are currently stored in the non-expiring cache
-func CacheCount() int {
-	mux.RLock()
-	defer mux.RUnlock()
-
-	return len(cache)
 }
