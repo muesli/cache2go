@@ -53,7 +53,7 @@ func main() {
     time.Sleep(6 * time.Second)
     res, err = cache.Value("someKey")
     if err != nil {
-        fmt.Println("Item is not cached (anymore)." )
+        fmt.Println("Item is not cached (anymore).")
     }
 }
 ```

@@ -37,7 +37,7 @@ type CacheTable struct {
 
 	// Callback method triggered when adding a new item to the cache
 	addedItem func(*CacheEntry)
-	// Callback method triggered when adding a new item to the cache
+	// Callback method triggered before deleting an item from the cache
 	aboutToDeleteItem func(*CacheEntry)
 }
 
@@ -45,6 +45,21 @@ var (
 	cache = make(map[string]*CacheTable)
 	mutex sync.RWMutex
 )
+
+// Returns a newly created CacheEntry
+func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}) CacheEntry {
+	t := time.Now()
+	entry := CacheEntry{
+		key: key,
+		lifeSpan: lifeSpan,
+		createdOn: t,
+		accessedOn: t,
+		aboutToExpire: nil,
+		data: data,
+	}
+
+	return entry
+}
 
 // Mark entry to be kept for another expireDuration period
 func (entry *CacheEntry) KeepAlive() {
@@ -246,21 +261,6 @@ func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	}
 
 	return nil, errors.New("Key not found in cache")
-}
-
-// Returns a newly created CacheEntry
-func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}) CacheEntry {
-	t := time.Now()
-	entry := CacheEntry{
-		key: key,
-		lifeSpan: lifeSpan,
-		createdOn: t,
-		accessedOn: t,
-		aboutToExpire: nil,
-		data: data,
-	}
-
-	return entry
 }
 
 // Delete all items from cache
