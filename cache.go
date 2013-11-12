@@ -180,17 +180,7 @@ func (table *CacheTable) expirationCheck() {
 			continue
 		}
 		if now.Sub(c.accessedOn) >= c.lifeSpan {
-			// Trigger callbacks before deleting an item from cache
-			if c.aboutToExpire != nil {
-				c.aboutToExpire(key)
-			}
-			if table.aboutToDeleteItem != nil {
-				table.aboutToDeleteItem(c)
-			}
-
-			table.Lock()
-			delete(table.items, key)
-			table.Unlock()
+			table.Delete(key)
 		} else {
 			if smallestDuration == 0 || c.lifeSpan < smallestDuration {
 				smallestDuration = c.lifeSpan - now.Sub(c.accessedOn)
@@ -238,7 +228,27 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 	return &entry
 }
 
-// Get an entry from the cache and mark it to be kept alive
+// Delete an item from the cache
+func (table *CacheTable) Delete(key interface{}) (*CacheEntry, error) {
+	table.Lock()
+	defer table.Unlock()
+	if r, ok := table.items[key]; ok {
+		// Trigger callbacks before deleting an item from cache
+		if r.aboutToExpire != nil {
+			r.aboutToExpire(key)
+		}
+		if table.aboutToDeleteItem != nil {
+			table.aboutToDeleteItem(r)
+		}
+
+		delete(table.items, key)
+		return r, nil
+	}
+
+	return nil, errors.New("Key not found in cache")
+}
+
+// Get an item from the cache and mark it to be kept alive
 func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	table.RLock()
 	if r, ok := table.items[key]; ok {

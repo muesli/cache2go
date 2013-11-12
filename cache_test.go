@@ -74,6 +74,20 @@ func TestCacheKeepAlive(t *testing.T) {
 	}
 }
 
+func TestDelete(t *testing.T) {
+	table := Cache("testDelete")
+	table.Cache(k, 0, v)
+	p, err := table.Value(k)
+	if err != nil || p == nil || p.Data().(string) != v {
+		t.Error("Error retrieving data from cache", err)
+	}
+	table.Delete(k)
+	p, err = table.Value(k)
+	if err == nil || p != nil {
+		t.Error("Error deleting data")
+	}
+}
+
 func TestFlush(t *testing.T) {
 	table := Cache("testFlush")
 	table.Cache(k, 10*time.Second, v)
