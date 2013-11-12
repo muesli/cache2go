@@ -334,7 +334,7 @@ func (table *CacheTable) Flush() {
 	}
 }
 
-// Get an item from the cache and mark it to be kept alive
+// Internal logging method for convenience
 func (table *CacheTable) log(v ...interface{}) {
 	if table.logger == nil {
 		return
