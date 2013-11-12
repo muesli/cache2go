@@ -227,22 +227,26 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 
 // Delete an item from the cache
 func (table *CacheTable) Delete(key interface{}) (*CacheEntry, error) {
-	table.Lock()
-	defer table.Unlock()
-	if r, ok := table.items[key]; ok {
-		// Trigger callbacks before deleting an item from cache
-		if r.aboutToExpire != nil {
-			r.aboutToExpire(key)
-		}
-		if table.aboutToDeleteItem != nil {
-			table.aboutToDeleteItem(r)
-		}
+	table.RLock()
+	r, ok := table.items[key]
+	table.RUnlock()
 
-		delete(table.items, key)
-		return r, nil
+	if !ok {
+		return nil, errors.New("Key not found in cache")
 	}
 
-	return nil, errors.New("Key not found in cache")
+	// Trigger callbacks before deleting an item from cache
+	if r.aboutToExpire != nil {
+		r.aboutToExpire(key)
+	}
+	if table.aboutToDeleteItem != nil {
+		table.aboutToDeleteItem(r)
+	}
+
+	table.Lock()
+	defer table.Unlock()
+	delete(table.items, key)
+	return r, nil
 }
 
 // Test whether an item exists in the cache. Unlike the Value method
@@ -258,23 +262,22 @@ func (table *CacheTable) Exists(key interface{}) bool {
 // Get an item from the cache and mark it to be kept alive
 func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	table.RLock()
-	if r, ok := table.items[key]; ok {
-		defer table.RUnlock()
+	r, ok := table.items[key];
+	table.RUnlock()
 
+	if ok {
 		r.KeepAlive()
 		return r, nil
-	} else {
-		table.RUnlock()
+	}
 
-		if table.loadData != nil {
-			item := table.loadData(key)
-			table.Cache(key, item.lifeSpan, item.data)
-			if item != nil {
-				return item, nil
-			} else {
-				return nil, errors.New("Key not found and could not be loaded into cache")
-			}
+	if table.loadData != nil {
+		item := table.loadData(key)
+		table.Cache(key, item.lifeSpan, item.data)
+		if item != nil {
+			return item, nil
 		}
+
+		return nil, errors.New("Key not found and could not be loaded into cache")
 	}
 
 	return nil, errors.New("Key not found in cache")
