@@ -75,7 +75,8 @@ To run the application, go to examples/mycachedapp/ and run:
 
     go run mycachedapp.go
 
-See the cache_test.go for further working examples.
+You can find a few more examples [few more examples here](https://github.com/rif/cache2go/tree/master/examples).
+Also see our test-cases in cache_test.go for further working examples.
 
 ## Development
 API docs can be found [here](http://go.pkgdoc.org/github.com/rif/cache2go).
