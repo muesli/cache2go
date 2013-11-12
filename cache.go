@@ -248,6 +248,16 @@ func (table *CacheTable) Delete(key interface{}) (*CacheEntry, error) {
 	return nil, errors.New("Key not found in cache")
 }
 
+// Test whether an item exists in the cache. Unlike the Value method
+// Exists never tries to fetch data via the loadData callback
+func (table *CacheTable) Exists(key interface{}) bool {
+	table.RLock()
+	defer table.RUnlock()
+	_, ok := table.items[key]
+
+	return ok
+}
+
 // Get an item from the cache and mark it to be kept alive
 func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 	table.RLock()

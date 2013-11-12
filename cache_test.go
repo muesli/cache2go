@@ -74,6 +74,14 @@ func TestCacheKeepAlive(t *testing.T) {
 	}
 }
 
+func TestExists(t *testing.T) {
+	table := Cache("testExists")
+	table.Cache(k, 0, v)
+	if !table.Exists(k) {
+		t.Error("Error verifying existing data in cache")
+	}
+}
+
 func TestDelete(t *testing.T) {
 	table := Cache("testDelete")
 	table.Cache(k, 0, v)
