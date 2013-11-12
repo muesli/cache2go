@@ -1,8 +1,9 @@
-/* Simple caching library with expiration capabilities
-       Copyright (c) 2012, Radu Ioan Fericean
-                     2013, Christian Muehlhaeuser <muesli@gmail.com>
-
-    For license see LICENSE.txt
+/*
+ * Simple caching library with expiration capabilities
+ *     Copyright (c) 2012, Radu Ioan Fericean
+ *                   2013, Christian Muehlhaeuser <muesli@gmail.com>
+ *
+ *   For license see LICENSE.txt
  */
 
 package cache2go
@@ -42,7 +43,6 @@ type CacheTable struct {
 
 	// Callback method triggered when trying to load a non-existing key
 	loadData func(interface{}) *CacheItem
-
 	// Callback method triggered when adding a new item to the cache
 	addedItem func(*CacheItem)
 	// Callback method triggered before deleting an item from the cache
@@ -204,16 +204,18 @@ func (table *CacheTable) expirationCheck() {
 	smallestDuration := 0 * time.Second
 	for key, c := range cc {
 		c.RLock()
-		defer c.RUnlock()
+		lifeSpan := c.lifeSpan
+		accessedOn := c.accessedOn
+		c.RUnlock()
 
-		if c.lifeSpan == 0 {
+		if lifeSpan == 0 {
 			continue
 		}
-		if now.Sub(c.accessedOn) >= c.lifeSpan {
+		if now.Sub(accessedOn) >= lifeSpan {
 			table.Delete(key)
 		} else {
-			if smallestDuration == 0 || c.lifeSpan < smallestDuration {
-				smallestDuration = c.lifeSpan - now.Sub(c.accessedOn)
+			if smallestDuration == 0 || lifeSpan < smallestDuration {
+				smallestDuration = lifeSpan - now.Sub(accessedOn)
 			}
 		}
 	}
