@@ -205,6 +205,7 @@ func (table *CacheTable) expirationCheck() {
  / data is the cache-item value
 */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheEntry {
+	table.log("Adding item ( Key:", key, "with a lifespan of", lifeSpan, ") to table", table.name)
 	entry := CreateCacheEntry(key, lifeSpan, data)
 
 	table.Lock()
@@ -234,6 +235,8 @@ func (table *CacheTable) Delete(key interface{}) (*CacheEntry, error) {
 	if !ok {
 		return nil, errors.New("Key not found in cache")
 	}
+
+	table.log("Deleting item ( Key:", key, "created on", r.CreatedOn(), ") from table", table.name)
 
 	// Trigger callbacks before deleting an item from cache
 	if r.aboutToExpire != nil {
@@ -297,4 +300,13 @@ func (table *CacheTable) Flush() {
 	mutex.Lock()
 	defer mutex.Unlock()
 	delete(cache, table.name)
+}
+
+// Get an item from the cache and mark it to be kept alive
+func (table *CacheTable) log(v ...interface{}) {
+	if table.logger == nil {
+		return
+	}
+
+	table.logger.Println(v)
 }
