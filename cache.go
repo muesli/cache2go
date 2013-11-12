@@ -8,15 +8,17 @@ import (
 	"time"
 )
 
-// Structure of an entry in the cache
+// Structure of an item in the cache
 // data contains the user-set value in the cache
-type CacheEntry struct {
+type CacheItem struct {
 	sync.Mutex
 	key            interface{}
 	data           interface{}
 	lifeSpan       time.Duration
+
 	createdOn      time.Time
 	accessedOn     time.Time
+	accessCount    int64
 
 	// Callback method triggered right before removing the item from the cache
 	aboutToExpire func(interface{})
@@ -26,19 +28,19 @@ type CacheEntry struct {
 type CacheTable struct {
 	sync.RWMutex
 	name            string
-	items           map[interface{}]*CacheEntry
+	items           map[interface{}]*CacheItem
 	cleanupTimer    *time.Timer
 	cleanupInterval time.Duration
 
 	logger          *log.Logger
 
 	// Callback method triggered when trying to load a non-existing key
-	loadData func(interface{}) *CacheEntry
+	loadData func(interface{}) *CacheItem
 
 	// Callback method triggered when adding a new item to the cache
-	addedItem func(*CacheEntry)
+	addedItem func(*CacheItem)
 	// Callback method triggered before deleting an item from the cache
-	aboutToDeleteItem func(*CacheEntry)
+	aboutToDeleteItem func(*CacheItem)
 }
 
 var (
@@ -46,67 +48,76 @@ var (
 	mutex sync.RWMutex
 )
 
-// Returns a newly created CacheEntry
-func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}) CacheEntry {
+// Returns a newly created CacheItem
+func CreateCacheItem(key interface{}, lifeSpan time.Duration, data interface{}) CacheItem {
 	t := time.Now()
-	entry := CacheEntry{
+	item := CacheItem{
 		key: key,
 		lifeSpan: lifeSpan,
 		createdOn: t,
 		accessedOn: t,
+		accessCount: 0,
 		aboutToExpire: nil,
 		data: data,
 	}
 
-	return entry
+	return item
 }
 
-// Mark entry to be kept for another expireDuration period
-func (entry *CacheEntry) KeepAlive() {
-	entry.Lock()
-	defer entry.Unlock()
-	entry.accessedOn = time.Now()
+// Mark item to be kept for another expireDuration period
+func (item *CacheItem) KeepAlive() {
+	item.Lock()
+	defer item.Unlock()
+	item.accessedOn = time.Now()
+	item.accessCount++
 }
 
-// Returns this entry's expiration duration
-func (entry *CacheEntry) LifeSpan() time.Duration {
-	entry.Lock()
-	defer entry.Unlock()
-	return entry.lifeSpan
+// Returns this item's expiration duration
+func (item *CacheItem) LifeSpan() time.Duration {
+	item.Lock()
+	defer item.Unlock()
+	return item.lifeSpan
 }
 
-// Returns when this entry was last accessed
-func (entry *CacheEntry) AccessedOn() time.Time {
-	entry.Lock()
-	defer entry.Unlock()
-	return entry.accessedOn
+// Returns when this item was last accessed
+func (item *CacheItem) AccessedOn() time.Time {
+	item.Lock()
+	defer item.Unlock()
+	return item.accessedOn
 }
 
-// Returns when this entry was added to the cache
-func (entry *CacheEntry) CreatedOn() time.Time {
-	entry.Lock()
-	defer entry.Unlock()
-	return entry.createdOn
+// Returns when this item was added to the cache
+func (item *CacheItem) CreatedOn() time.Time {
+	item.Lock()
+	defer item.Unlock()
+	return item.createdOn
+}
+
+// Returns how often this item has been accessed
+func (item *CacheItem) AccessCount() int64 {
+	item.Lock()
+	defer item.Unlock()
+	return item.accessCount
 }
 
 // Returns the key of this cached item
-func (entry *CacheEntry) Key() interface{} {
-	entry.Lock()
-	defer entry.Unlock()
-	return entry.key
+func (item *CacheItem) Key() interface{} {
+	item.Lock()
+	defer item.Unlock()
+	return item.key
 }
 
 // Returns the value of this cached item
-func (entry *CacheEntry) Data() interface{} {
-	entry.Lock()
-	defer entry.Unlock()
-	return entry.data
+func (item *CacheItem) Data() interface{} {
+	item.Lock()
+	defer item.Unlock()
+	return item.data
 }
 
 // Configures a callback, which will be called right before the item
 // is about to be removed from the cache
-func (entry *CacheEntry) SetAboutToExpireCallback(f func(interface{})) {
-	entry.aboutToExpire = f
+func (item *CacheItem) SetAboutToExpireCallback(f func(interface{})) {
+	item.aboutToExpire = f
 }
 
 // Returns the existing cache table with given name or creates a new one
@@ -119,7 +130,7 @@ func Cache(table string) *CacheTable {
 	if !ok {
 		t = &CacheTable{
 			name:  table,
-			items: make(map[interface{}]*CacheEntry),
+			items: make(map[interface{}]*CacheItem),
 		}
 
 		mutex.Lock()
@@ -140,19 +151,19 @@ func (table *CacheTable) Count() int {
 
 // Configures a data-loader callback, which will be called when trying
 // to use access a non-existing key
-func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheEntry) {
+func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheItem) {
 	table.loadData = f
 }
 
 // Configures a callback, which will be called every time a new item
 // is added to the cache
-func (table *CacheTable) SetAddedItemCallback(f func(*CacheEntry)) {
+func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
 	table.addedItem = f
 }
 
 // Configures a callback, which will be called every time an item
 // is about to be removed from the cache
-func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheEntry)) {
+func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheItem)) {
 	table.aboutToDeleteItem = f
 }
 
@@ -205,18 +216,18 @@ func (table *CacheTable) expirationCheck() {
  / last access
  / data is the cache-item value
 */
-func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheEntry {
+func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
 	table.log("Adding item ( Key:", key, "with a lifespan of", lifeSpan, ") to table", table.name)
-	entry := CreateCacheEntry(key, lifeSpan, data)
+	item := CreateCacheItem(key, lifeSpan, data)
 
 	table.Lock()
-	table.items[key] = &entry
+	table.items[key] = &item
 	expDur := table.cleanupInterval
 	table.Unlock()
 
 	// Trigger callback after adding an item to cache
 	if table.addedItem != nil {
-		table.addedItem(&entry)
+		table.addedItem(&item)
 	}
 
 	// If we haven't set up any expiration check timer or found a more imminent item
@@ -224,11 +235,11 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 		table.expirationCheck()
 	}
 
-	return &entry
+	return &item
 }
 
 // Delete an item from the cache
-func (table *CacheTable) Delete(key interface{}) (*CacheEntry, error) {
+func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
 	table.RUnlock()
@@ -264,7 +275,7 @@ func (table *CacheTable) Exists(key interface{}) bool {
 }
 
 // Get an item from the cache and mark it to be kept alive
-func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
+func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key];
 	table.RUnlock()
@@ -294,7 +305,7 @@ func (table *CacheTable) Flush() {
 
 	table.log("Flushing table", table.name)
 
-	table.items = make(map[interface{}]*CacheEntry)
+	table.items = make(map[interface{}]*CacheItem)
 	table.cleanupInterval = 0
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()

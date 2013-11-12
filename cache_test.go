@@ -146,10 +146,10 @@ func TestCount(t *testing.T) {
 
 func TestDataLoader(t *testing.T) {
 	table := Cache("testDataLoader")
-	table.SetDataLoader(func(key interface{}) *CacheEntry{
+	table.SetDataLoader(func(key interface{}) *CacheItem{
 		val := k + key.(string)
-		entry := CreateCacheEntry(key, 500*time.Millisecond, val)
-		return &entry
+		item := CreateCacheItem(key, 500*time.Millisecond, val)
+		return &item
 	})
 
 	for i := 0; i < 10; i++ {
@@ -167,10 +167,10 @@ func TestCallbacks(t *testing.T) {
 	removedKey := ""
 
 	table := Cache("testCallbacks")
-	table.SetAddedItemCallback(func(item *CacheEntry) {
+	table.SetAddedItemCallback(func(item *CacheItem) {
 		addedKey = item.Key().(string)
 	})
-	table.SetAboutToDeleteItemCallback(func(item *CacheEntry) {
+	table.SetAboutToDeleteItemCallback(func(item *CacheItem) {
 		removedKey = item.Key().(string)
 	})
 
