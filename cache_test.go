@@ -101,9 +101,13 @@ func TestFlush(t *testing.T) {
 	table.Cache(k, 10*time.Second, v)
 	time.Sleep(100*time.Millisecond)
 	table.Flush()
+
 	p, err := table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
+	}
+	if table.Count() != 0 {
+		t.Error("Error verifying empty table")
 	}
 }
 
@@ -111,15 +115,19 @@ func TestFlushNoTimout(t *testing.T) {
 	table := Cache("testFlushNoTimeout")
 	table.Cache(k, 10*time.Second, v)
 	table.Flush()
+
 	p, err := table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
+	if table.Count() != 0 {
+		t.Error("Error verifying empty table")
+	}
 }
 
-func TestMassive(t *testing.T) {
+func TestCount(t *testing.T) {
 	count := 100000
-	table := Cache("testMassive")
+	table := Cache("testCount")
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
 		table.Cache(key, 2*time.Second, v)
@@ -131,7 +139,7 @@ func TestMassive(t *testing.T) {
 			t.Error("Error retrieving data")
 		}
 	}
-	if table.CacheCount() != count {
+	if table.Count() != count {
 		t.Error("Data count mismatch")
 	}
 }
