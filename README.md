@@ -33,8 +33,8 @@ type myStruct struct {
 
 func main() {
     cache := cache2go.Cache("myCache")
-    cache.SetAboutToDeleteItemCallback(func(entry *cache2go.CacheEntry){
-        fmt.Println("Deleting:", entry.Key().(string), entry.Data().(*myStruct).text, entry.CreatedOn())
+    cache.SetAboutToDeleteItemCallback(func(e *cache2go.CacheEntry){
+        fmt.Println("Deleting:", e.Key(), e.Data().(*myStruct).text, e.CreatedOn())
     })
 
     // We will put the item in the cache
