@@ -1,23 +1,3 @@
-cache2go
-========
-
-Simple golang object caching library with expiration capabilities.
-
-## Installation
-
-Make sure you have a working Go environment. See the [install instructions](http://golang.org/doc/install.html).
-
-To install cache2go, simply run:
-
-    go get github.com/rif/cache2go
-
-To compile it from source:
-
-    git clone git://github.com/rif/cache2go.git
-    cd cache2go && go build && go test -v
-
-## Example
-```go
 package main
 
 import (
@@ -68,15 +48,3 @@ func main() {
 	// And wipe the entire cache table
 	cache.Flush()
 }
-```
-
-To run the application, go to examples/mycachedapp/ and run:
-
-    go run mycachedapp.go
-
-See the cache_test.go for further working examples.
-
-## Development
-API docs can be found [here](http://go.pkgdoc.org/github.com/rif/cache2go).
-
-Continous integration: [![Build Status](https://secure.travis-ci.org/rif/cache2go.png)](http://travis-ci.org/rif/cache2go)
