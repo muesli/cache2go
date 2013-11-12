@@ -130,3 +130,31 @@ func TestDataLoader(t *testing.T) {
 		}
 	}
 }
+
+func TestCallbacks(t *testing.T) {
+	table := Cache("callbackTest")
+
+	addedKey := ""
+	removedKey := ""
+
+	table.SetAddedItemCallback(func(item *CacheEntry) {
+		addedKey = item.Key().(string)
+	})
+	table.SetAboutToDeleteItemCallback(func(item *CacheEntry) {
+		removedKey = item.Key().(string)
+	})
+
+	k := "testkey"
+	v := "testvalue"
+	table.Cache(k, 500*time.Millisecond, v, nil)
+
+	time.Sleep(250 * time.Millisecond)
+	if addedKey != k {
+		t.Error("AddedItem callback not working")
+	}
+
+	time.Sleep(500 * time.Millisecond)
+	if removedKey != k {
+		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
+	}
+}
