@@ -31,6 +31,9 @@ type CacheTable struct {
 
 	// Callback method triggered when trying to load a non-existing key
 	loadData func(interface{}) *CacheEntry
+
+	// Callback method triggered when adding a new item to the cache
+	addedItem func(*CacheEntry)
 }
 
 var (
@@ -64,6 +67,13 @@ func (entry *CacheEntry) CreatedOn() time.Time {
 	entry.Lock()
 	defer entry.Unlock()
 	return entry.createdOn
+}
+
+// Returns the key of this cached item
+func (entry *CacheEntry) Key() interface{} {
+	entry.Lock()
+	defer entry.Unlock()
+	return entry.key
 }
 
 // Returns the value of this cached item
@@ -105,6 +115,12 @@ func (table *CacheTable) CacheCount() int {
 // to use access a non-existing key
 func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheEntry) {
 	table.loadData = f
+}
+
+// Configures a callback, which will be called every time a new item
+// is added to the cache
+func (table *CacheTable) SetAddedItemCallback(f func(*CacheEntry)) {
+	table.addedItem = f
 }
 
 // Expiration check loop, triggered by a self-adjusting timer
@@ -166,6 +182,11 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 	table.items[key] = &entry
 	expDur := table.cleanupInterval
 	table.Unlock()
+
+	// Trigger callback after adding an item to cache
+	if table.addedItem != nil {
+		table.addedItem(&entry)
+	}
 
 	// If we haven't set up any expiration check timer or found a more imminent item
 	if lifeSpan > 0 && (expDur == 0 || lifeSpan < expDur) {
