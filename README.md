@@ -36,7 +36,8 @@ func main() {
 	// Accessing a new cache table for the first time will create it
 	cache := cache2go.Cache("myCache")
 
-	// We will put a new item in the cache. It will expire in 5 seconds
+	// We will put a new item in the cache.
+	// It will expire 5 seconds after its last access via Value(key).
 	val := myStruct{"This is a test!", []byte{}}
 	cache.Cache("someKey", 5*time.Second, &val)
 
