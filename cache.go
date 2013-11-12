@@ -186,6 +186,7 @@ func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 
 		if table.loadData != nil {
 			item := table.loadData(key)
+			table.Cache(key, item.lifeSpan, item.data, item.aboutToExpire)
 			if item != nil {
 				return item, nil
 			} else {
