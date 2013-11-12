@@ -121,6 +121,7 @@ func Cache(table string) *CacheTable {
 			name:  table,
 			items: make(map[interface{}]*CacheEntry),
 		}
+
 		mutex.Lock()
 		cache[table] = t
 		mutex.Unlock()
@@ -130,7 +131,7 @@ func Cache(table string) *CacheTable {
 }
 
 // Returns how many items are currently stored in the cache
-func (table *CacheTable) CacheCount() int {
+func (table *CacheTable) Count() int {
 	table.RLock()
 	defer table.RUnlock()
 
@@ -291,15 +292,13 @@ func (table *CacheTable) Flush() {
 	table.Lock()
 	defer table.Unlock()
 
+	table.log("Flushing table", table.name)
+
 	table.items = make(map[interface{}]*CacheEntry)
 	table.cleanupInterval = 0
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
 	}
-
-	mutex.Lock()
-	defer mutex.Unlock()
-	delete(cache, table.name)
 }
 
 // Get an item from the cache and mark it to be kept alive
