@@ -34,6 +34,8 @@ type CacheTable struct {
 
 	// Callback method triggered when adding a new item to the cache
 	addedItem func(*CacheEntry)
+	// Callback method triggered when adding a new item to the cache
+	aboutToDeleteItem func(*CacheEntry)
 }
 
 var (
@@ -123,6 +125,12 @@ func (table *CacheTable) SetAddedItemCallback(f func(*CacheEntry)) {
 	table.addedItem = f
 }
 
+// Configures a callback, which will be called every time an item
+// is about to be removed from the cache
+func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheEntry)) {
+	table.aboutToDeleteItem = f
+}
+
 // Expiration check loop, triggered by a self-adjusting timer
 func (table *CacheTable) expirationCheck() {
 	table.Lock()
@@ -143,9 +151,14 @@ func (table *CacheTable) expirationCheck() {
 			continue
 		}
 		if now.Sub(c.accessedOn) >= c.lifeSpan {
+			// Trigger callbacks before deleting an item from cache
 			if c.aboutToExpire != nil {
 				c.aboutToExpire(key)
 			}
+			if table.aboutToDeleteItem != nil {
+				table.aboutToDeleteItem(c)
+			}
+
 			table.Lock()
 			delete(table.items, key)
 			table.Unlock()
