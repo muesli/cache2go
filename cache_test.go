@@ -13,7 +13,7 @@ var (
 
 func TestCache(t *testing.T) {
 	table := Cache("testCache")
-	table.Cache(k, 1*time.Second, v, nil)
+	table.Cache(k, 1*time.Second, v)
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
@@ -22,7 +22,7 @@ func TestCache(t *testing.T) {
 
 func TestCacheExpire(t *testing.T) {
 	table := Cache("testExpire")
-	table.Cache(k, 250*time.Millisecond, v, nil)
+	table.Cache(k, 250*time.Millisecond, v)
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
@@ -36,7 +36,7 @@ func TestCacheExpire(t *testing.T) {
 
 func TestCacheNonExpiring(t *testing.T) {
 	table := Cache("testNonExpiring")
-	table.Cache(k, 0, v, nil)
+	table.Cache(k, 0, v)
 	time.Sleep(500*time.Millisecond)
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
@@ -48,8 +48,8 @@ func TestCacheKeepAlive(t *testing.T) {
 	k2 := k + k
 	v2 := v + v
 	table := Cache("testKeepAlive")
-	table.Cache(k, 250*time.Millisecond, v, nil)
-	table.Cache(k2, 750*time.Millisecond, v2, nil)
+	table.Cache(k, 250*time.Millisecond, v)
+	table.Cache(k2, 750*time.Millisecond, v2)
 
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
@@ -76,7 +76,7 @@ func TestCacheKeepAlive(t *testing.T) {
 
 func TestFlush(t *testing.T) {
 	table := Cache("testFlush")
-	table.Cache(k, 10*time.Second, v, nil)
+	table.Cache(k, 10*time.Second, v)
 	time.Sleep(100*time.Millisecond)
 	table.Flush()
 	p, err := table.Value(k)
@@ -87,7 +87,7 @@ func TestFlush(t *testing.T) {
 
 func TestFlushNoTimout(t *testing.T) {
 	table := Cache("testFlushNoTimeout")
-	table.Cache(k, 10*time.Second, v, nil)
+	table.Cache(k, 10*time.Second, v)
 	table.Flush()
 	p, err := table.Value(k)
 	if err == nil || p != nil {
@@ -100,7 +100,7 @@ func TestMassive(t *testing.T) {
 	table := Cache("testMassive")
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
-		table.Cache(key, 2*time.Second, v, nil)
+		table.Cache(key, 2*time.Second, v)
 	}
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
@@ -118,7 +118,7 @@ func TestDataLoader(t *testing.T) {
 	table := Cache("testDataLoader")
 	table.SetDataLoader(func(key interface{}) *CacheEntry{
 		val := k + key.(string)
-		entry := CreateCacheEntry(key, 500*time.Millisecond, val, nil)
+		entry := CreateCacheEntry(key, 500*time.Millisecond, val)
 		return &entry
 	})
 
@@ -144,7 +144,7 @@ func TestCallbacks(t *testing.T) {
 		removedKey = item.Key().(string)
 	})
 
-	table.Cache(k, 500*time.Millisecond, v, nil)
+	table.Cache(k, 500*time.Millisecond, v)
 
 	time.Sleep(250*time.Millisecond)
 	if addedKey != k {
