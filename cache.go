@@ -16,8 +16,8 @@ import (
 )
 
 /* Structure of an item in the cache.
- *	Parameter data contains the user-set value in the cache.
- */
+Parameter data contains the user-set value in the cache.
+*/
 type CacheItem struct {
 	sync.RWMutex
 
@@ -70,11 +70,11 @@ var (
 )
 
 /* Returns a newly created CacheItem.
- *	Parameter key is the item's cache-key.
- *	Parameter lifeSpan determines after which time period without an access the item
- *		will get removed from the cache.
- *	Parameter data is the item's value.
- */
+Parameter key is the item's cache-key.
+Parameter lifeSpan determines after which time period without an access the item
+	will get removed from the cache.
+Parameter data is the item's value.
+*/
 func CreateCacheItem(key interface{}, lifeSpan time.Duration, data interface{}) CacheItem {
 	t := time.Now()
 	return CacheItem{
@@ -251,11 +251,11 @@ func (table *CacheTable) expirationCheck() {
 }
 
 /* Adds a key/value pair to the cache.
- *	Parameter key is the item's cache-key.
- *	Parameter lifeSpan determines after which time period without an access the item
- *		will get removed from the cache.
- *	Parameter data is the item's value.
- */
+Parameter key is the item's cache-key.
+Parameter lifeSpan determines after which time period without an access the item
+	will get removed from the cache.
+Parameter data is the item's value.
+*/
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
 	item := CreateCacheItem(key, lifeSpan, data)
 
