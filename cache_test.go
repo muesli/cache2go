@@ -6,105 +6,106 @@ import (
 	"time"
 )
 
+var (
+	k = "testkey"
+	v = "testvalue"
+)
+
 func TestCache(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 1*time.Second, a, nil)
-	b, err := table.Value("test")
-	if err != nil || b == nil || b.Data().(string) != a {
+	table := Cache("testCache")
+	table.Cache(k, 1*time.Second, v, nil)
+	p, err := table.Value(k)
+	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
 }
 
 func TestCacheExpire(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 1*time.Second, a, nil)
-	b, err := table.Value("test")
-	if err != nil || b == nil || b.Data().(string) != a {
+	table := Cache("testExpire")
+	table.Cache(k, 250*time.Millisecond, v, nil)
+	p, err := table.Value(k)
+	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(1500 * time.Millisecond)
-	b, err = table.Value("test")
-	if err == nil || b != nil {
+	time.Sleep(500*time.Millisecond)
+	p, err = table.Value(k)
+	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
 }
 
 func TestCacheNonExpiring(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 0, a, nil)
-	time.Sleep(500 * time.Millisecond)
-	b, err := table.Value("test")
-	if err != nil || b == nil || b.Data().(string) != a {
+	table := Cache("testNonExpiring")
+	table.Cache(k, 0, v, nil)
+	time.Sleep(500*time.Millisecond)
+	p, err := table.Value(k)
+	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
 }
 
 func TestCacheKeepAlive(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 500*time.Millisecond, a, nil)
-	a = "testest test"
-	table.Cache("test2", 1250*time.Millisecond, a, nil)
-	b, err := table.Value("test")
-	if err != nil || b == nil || b.Data().(string) != "testy test" {
+	k2 := k + k
+	v2 := v + v
+	table := Cache("testKeepAlive")
+	table.Cache(k, 250*time.Millisecond, v, nil)
+	table.Cache(k2, 750*time.Millisecond, v2, nil)
+
+	p, err := table.Value(k)
+	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(200 * time.Millisecond)
-	b.KeepAlive()
-	time.Sleep(750 * time.Millisecond)
-	b, err = table.Value("test")
-	if err == nil || b != nil {
+	time.Sleep(50*time.Millisecond)
+	p.KeepAlive()
+
+	time.Sleep(450*time.Millisecond)
+	p, err = table.Value(k)
+	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
-	b, err = table.Value("test2")
-	if err != nil || b == nil || b.Data().(string) != "testest test" {
+	p, err = table.Value(k2)
+	if err != nil || p == nil || p.Data().(string) != v2 {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(1500 * time.Millisecond)
-	b, err = table.Value("test2")
-	if err == nil || b != nil {
+	time.Sleep(1*time.Second)
+	p, err = table.Value(k2)
+	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
 }
 
 func TestFlush(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 10*time.Second, a, nil)
-	time.Sleep(1000 * time.Millisecond)
+	table := Cache("testFlush")
+	table.Cache(k, 10*time.Second, v, nil)
+	time.Sleep(100*time.Millisecond)
 	table.Flush()
-	b, err := table.Value("test")
-	if err == nil || b != nil {
+	p, err := table.Value(k)
+	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
 }
 
 func TestFlushNoTimout(t *testing.T) {
-	table := Cache("table")
-	a := "testy test"
-	table.Cache("test", 10*time.Second, a, nil)
+	table := Cache("testFlushNoTimeout")
+	table.Cache(k, 10*time.Second, v, nil)
 	table.Flush()
-	b, err := table.Value("test")
-	if err == nil || b != nil {
+	p, err := table.Value(k)
+	if err == nil || p != nil {
 		t.Error("Error expiring data")
 	}
 }
 
 func TestMassive(t *testing.T) {
-	table := Cache("table")
-	val := "testy test"
 	count := 100000
+	table := Cache("testMassive")
 	for i := 0; i < count; i++ {
-		key := "test_" + strconv.Itoa(i)
-		table.Cache(key, 2*time.Second, val, nil)
+		key := k + strconv.Itoa(i)
+		table.Cache(key, 2*time.Second, v, nil)
 	}
 	for i := 0; i < count; i++ {
-		key := "test_" + strconv.Itoa(i)
-		d, err := table.Value(key)
-		if err != nil || d == nil || d.Data().(string) != val {
+		key := k + strconv.Itoa(i)
+		p, err := table.Value(key)
+		if err != nil || p == nil || p.Data().(string) != v {
 			t.Error("Error retrieving data")
 		}
 	}
@@ -114,16 +115,16 @@ func TestMassive(t *testing.T) {
 }
 
 func TestDataLoader(t *testing.T) {
-	table := Cache("dataLoaderTest")
+	table := Cache("testDataLoader")
 	table.SetDataLoader(func(key interface{}) *CacheEntry{
-		val := "test_" + key.(string)
+		val := k + key.(string)
 		entry := CreateCacheEntry(key, 500*time.Millisecond, val, nil)
 		return &entry
 	})
 
 	for i := 0; i < 10; i++ {
-		key := "test_" + strconv.Itoa(i)
-		vp := "test_" + key
+		key := k + strconv.Itoa(i)
+		vp := k + key
 		p, err := table.Value(key)
 		if err != nil || p == nil || p.Data().(string) != vp {
 			t.Error("Error validating data loader")
@@ -132,11 +133,10 @@ func TestDataLoader(t *testing.T) {
 }
 
 func TestCallbacks(t *testing.T) {
-	table := Cache("callbackTest")
-
 	addedKey := ""
 	removedKey := ""
 
+	table := Cache("testCallbacks")
 	table.SetAddedItemCallback(func(item *CacheEntry) {
 		addedKey = item.Key().(string)
 	})
@@ -144,16 +144,14 @@ func TestCallbacks(t *testing.T) {
 		removedKey = item.Key().(string)
 	})
 
-	k := "testkey"
-	v := "testvalue"
 	table.Cache(k, 500*time.Millisecond, v, nil)
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(250*time.Millisecond)
 	if addedKey != k {
 		t.Error("AddedItem callback not working")
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(500*time.Millisecond)
 	if removedKey != k {
 		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
 	}
