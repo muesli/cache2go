@@ -22,16 +22,16 @@ type CacheItem struct {
 	sync.RWMutex
 
 	// The item's key
-	key      interface{}
+	key interface{}
 	// The item's data
-	data     interface{}
+	data interface{}
 	// How long will the item live in the cache when not being accessed/kept alive
 	lifeSpan time.Duration
 
 	// Creation timestamp
-	createdOn   time.Time
+	createdOn time.Time
 	// Last access timestamp
-	accessedOn  time.Time
+	accessedOn time.Time
 	// How often the item was accessed
 	accessCount int64
 
@@ -44,12 +44,12 @@ type CacheTable struct {
 	sync.RWMutex
 
 	// The table's name
-	name            string
+	name string
 	// All cached items
-	items           map[interface{}]*CacheItem
+	items map[interface{}]*CacheItem
 
 	// Timer responsible for triggering cleanup
-	cleanupTimer    *time.Timer
+	cleanupTimer *time.Timer
 	// Last used timer duration
 	cleanupInterval time.Duration
 
