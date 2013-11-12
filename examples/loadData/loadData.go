@@ -23,7 +23,7 @@ func main() {
 		return &item
 	})
 
-	// Let's retrieve the item for key "someKey" from the cache
+	// Let's retrieve a few auto-generated items from the cache
 	for i := 0; i < 10; i++ {
 		res, err := cache.Value("someKey_" + strconv.Itoa(i))
 		if err == nil {
