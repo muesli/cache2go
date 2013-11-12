@@ -11,7 +11,7 @@ import (
 // Structure of an item in the cache
 // data contains the user-set value in the cache
 type CacheItem struct {
-	sync.Mutex
+	sync.RWMutex
 	key            interface{}
 	data           interface{}
 	lifeSpan       time.Duration
@@ -74,43 +74,39 @@ func (item *CacheItem) KeepAlive() {
 
 // Returns this item's expiration duration
 func (item *CacheItem) LifeSpan() time.Duration {
-	item.Lock()
-	defer item.Unlock()
+	// immutable
 	return item.lifeSpan
 }
 
 // Returns when this item was last accessed
 func (item *CacheItem) AccessedOn() time.Time {
-	item.Lock()
-	defer item.Unlock()
+	item.RLock()
+	defer item.RUnlock()
 	return item.accessedOn
 }
 
 // Returns when this item was added to the cache
 func (item *CacheItem) CreatedOn() time.Time {
-	item.Lock()
-	defer item.Unlock()
+	// immutable
 	return item.createdOn
 }
 
 // Returns how often this item has been accessed
 func (item *CacheItem) AccessCount() int64 {
-	item.Lock()
-	defer item.Unlock()
+	item.RLock()
+	defer item.RUnlock()
 	return item.accessCount
 }
 
 // Returns the key of this cached item
 func (item *CacheItem) Key() interface{} {
-	item.Lock()
-	defer item.Unlock()
+	// immutable
 	return item.key
 }
 
 // Returns the value of this cached item
 func (item *CacheItem) Data() interface{} {
-	item.Lock()
-	defer item.Unlock()
+	// immutable
 	return item.data
 }
 
@@ -175,6 +171,7 @@ func (table *CacheTable) SetLogger(logger *log.Logger) {
 // Expiration check loop, triggered by a self-adjusting timer
 func (table *CacheTable) expirationCheck() {
 	table.Lock()
+	table.log("Expiration check triggered after", table.cleanupInterval , "for table", table.name)
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
 	}
@@ -188,6 +185,9 @@ func (table *CacheTable) expirationCheck() {
 	now := time.Now()
 	smallestDuration := 0 * time.Second
 	for key, c := range cc {
+		c.RLock()
+		defer c.RUnlock()
+
 		if c.lifeSpan == 0 {
 			continue
 		}
@@ -217,7 +217,7 @@ func (table *CacheTable) expirationCheck() {
  / data is the cache-item value
 */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
-	table.log("Adding item ( Key:", key, "with a lifespan of", lifeSpan, ") to table", table.name)
+	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
 	item := CreateCacheItem(key, lifeSpan, data)
 
 	table.Lock()
@@ -248,7 +248,7 @@ func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
 		return nil, errors.New("Key not found in cache")
 	}
 
-	table.log("Deleting item ( Key:", key, "created on", r.CreatedOn(), ") from table", table.name)
+	table.log("Deleting item with key", key, "created on", r.createdOn, "and hit", r.accessCount,"times from table", table.name)
 
 	// Trigger callbacks before deleting an item from cache
 	if r.aboutToExpire != nil {
