@@ -113,6 +113,8 @@ func (item *CacheItem) Data() interface{} {
 // Configures a callback, which will be called right before the item
 // is about to be removed from the cache
 func (item *CacheItem) SetAboutToExpireCallback(f func(interface{})) {
+	item.Lock()
+	defer item.Unlock()
 	item.aboutToExpire = f
 }
 
@@ -148,24 +150,32 @@ func (table *CacheTable) Count() int {
 // Configures a data-loader callback, which will be called when trying
 // to use access a non-existing key
 func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheItem) {
+	table.Lock()
+	defer table.Unlock()
 	table.loadData = f
 }
 
 // Configures a callback, which will be called every time a new item
 // is added to the cache
 func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
+	table.Lock()
+	defer table.Unlock()
 	table.addedItem = f
 }
 
 // Configures a callback, which will be called every time an item
 // is about to be removed from the cache
 func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheItem)) {
+	table.Lock()
+	defer table.Unlock()
 	table.aboutToDeleteItem = f
 }
 
 // Sets the logger to be used by this cache table
 func (table *CacheTable) SetLogger(logger *log.Logger) {
-    table.logger = logger
+	table.Lock()
+	defer table.Unlock()
+	table.logger = logger
 }
 
 // Expiration check loop, triggered by a self-adjusting timer
@@ -217,10 +227,10 @@ func (table *CacheTable) expirationCheck() {
  / data is the cache-item value
 */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
-	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
 	item := CreateCacheItem(key, lifeSpan, data)
 
 	table.Lock()
+	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
 	table.items[key] = &item
 	expDur := table.cleanupInterval
 	table.Unlock()
@@ -242,24 +252,27 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
-	table.RUnlock()
 
 	if !ok {
+		table.RUnlock()
 		return nil, errors.New("Key not found in cache")
 	}
 
-	table.log("Deleting item with key", key, "created on", r.createdOn, "and hit", r.accessCount,"times from table", table.name)
-
 	// Trigger callbacks before deleting an item from cache
-	if r.aboutToExpire != nil {
-		r.aboutToExpire(key)
-	}
 	if table.aboutToDeleteItem != nil {
 		table.aboutToDeleteItem(r)
+	}
+	table.RUnlock()
+	r.RLock()
+	defer r.RUnlock()
+	if r.aboutToExpire != nil {
+		r.aboutToExpire(key)
 	}
 
 	table.Lock()
 	defer table.Unlock()
+
+	table.log("Deleting item with key", key, "created on", r.createdOn, "and hit", r.accessCount,"times from table", table.name)
 	delete(table.items, key)
 	return r, nil
 }
