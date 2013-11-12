@@ -1,4 +1,10 @@
-// Simple caching library with expiration capabilities
+/* Simple caching library with expiration capabilities
+       Copyright (c) 2012, Radu Ioan Fericean
+                     2013, Christian Muehlhaeuser <muesli@gmail.com>
+
+    For license see LICENSE.txt
+ */
+
 package cache2go
 
 import (
@@ -223,11 +229,10 @@ func (table *CacheTable) expirationCheck() {
 }
 
 /* Adds a key/value pair to the cache
-/ key is a unique cache-item key in the cache
-/ lifeSpan indicates how long this item will remain in the cache after its
-/ last access
-/ data is the cache-item value
-*/
+   key is a unique item-key in the cache
+   lifeSpan indicates how long this item will remain in cache after its last access
+   data is the item's value
+ */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
 	item := CreateCacheItem(key, lifeSpan, data)
 
