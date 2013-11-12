@@ -181,7 +181,11 @@ func (table *CacheTable) SetLogger(logger *log.Logger) {
 // Expiration check loop, triggered by a self-adjusting timer
 func (table *CacheTable) expirationCheck() {
 	table.Lock()
-	table.log("Expiration check triggered after", table.cleanupInterval , "for table", table.name)
+	if table.cleanupInterval > 0 {
+		table.log("Expiration check triggered after", table.cleanupInterval , "for table", table.name)
+	} else {
+		table.log("Expiration check installed for table", table.name)
+	}
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
 	}
