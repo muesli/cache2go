@@ -3,6 +3,7 @@ package cache2go
 
 import (
 	"errors"
+	"log"
 	"sync"
 	"time"
 )
@@ -28,6 +29,8 @@ type CacheTable struct {
 	items           map[interface{}]*CacheEntry
 	cleanupTimer    *time.Timer
 	cleanupInterval time.Duration
+
+	logger          *log.Logger
 
 	// Callback method triggered when trying to load a non-existing key
 	loadData func(interface{}) *CacheEntry
@@ -85,6 +88,12 @@ func (entry *CacheEntry) Data() interface{} {
 	return entry.data
 }
 
+// Configures a callback, which will be called right before the item
+// is about to be removed from the cache
+func (entry *CacheEntry) SetAboutToExpireCallback(f func(interface{})) {
+	entry.aboutToExpire = f
+}
+
 // Returns the existing cache table with given name or creates a new one
 // if the table does not exist yet
 func Cache(table string) *CacheTable {
@@ -129,6 +138,11 @@ func (table *CacheTable) SetAddedItemCallback(f func(*CacheEntry)) {
 // is about to be removed from the cache
 func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheEntry)) {
 	table.aboutToDeleteItem = f
+}
+
+// Sets the logger to be used by this cache table
+func (table *CacheTable) SetLogger(logger *log.Logger) {
+    table.logger = logger
 }
 
 // Expiration check loop, triggered by a self-adjusting timer
@@ -188,8 +202,8 @@ func (table *CacheTable) expirationCheck() {
  / will be called (with this item's key as its only parameter), right before
  / removing this item from the cache
 */
-func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(interface{})) {
-	entry := CreateCacheEntry(key, lifeSpan, data, aboutToExpireFunc)
+func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheEntry {
+	entry := CreateCacheEntry(key, lifeSpan, data)
 
 	table.Lock()
 	table.items[key] = &entry
@@ -205,6 +219,8 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 	if lifeSpan > 0 && (expDur == 0 || lifeSpan < expDur) {
 		table.expirationCheck()
 	}
+
+	return &entry
 }
 
 // Get an entry from the cache and mark it to be kept alive
@@ -220,7 +236,7 @@ func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 
 		if table.loadData != nil {
 			item := table.loadData(key)
-			table.Cache(key, item.lifeSpan, item.data, item.aboutToExpire)
+			table.Cache(key, item.lifeSpan, item.data)
 			if item != nil {
 				return item, nil
 			} else {
@@ -233,14 +249,14 @@ func (table *CacheTable) Value(key interface{}) (*CacheEntry, error) {
 }
 
 // Returns a newly created CacheEntry
-func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}, aboutToExpireFunc func(interface{})) CacheEntry {
+func CreateCacheEntry(key interface{}, lifeSpan time.Duration, data interface{}) CacheEntry {
 	t := time.Now()
 	entry := CacheEntry{
 		key: key,
 		lifeSpan: lifeSpan,
 		createdOn: t,
 		accessedOn: t,
-		aboutToExpire: aboutToExpireFunc,
+		aboutToExpire: nil,
 		data: data,
 	}
 
