@@ -51,7 +51,7 @@ var (
 // Returns a newly created CacheItem
 func CreateCacheItem(key interface{}, lifeSpan time.Duration, data interface{}) CacheItem {
 	t := time.Now()
-	item := CacheItem{
+	return CacheItem{
 		key:           key,
 		lifeSpan:      lifeSpan,
 		createdOn:     t,
@@ -60,8 +60,6 @@ func CreateCacheItem(key interface{}, lifeSpan time.Duration, data interface{}) 
 		aboutToExpire: nil,
 		data:          data,
 	}
-
-	return item
 }
 
 // Mark item to be kept for another expireDuration period
