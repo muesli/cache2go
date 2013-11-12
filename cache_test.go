@@ -27,7 +27,7 @@ func TestCacheExpire(t *testing.T) {
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(500*time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	p, err = table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
@@ -37,7 +37,7 @@ func TestCacheExpire(t *testing.T) {
 func TestCacheNonExpiring(t *testing.T) {
 	table := Cache("testNonExpiring")
 	table.Cache(k, 0, v)
-	time.Sleep(500*time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
@@ -55,10 +55,10 @@ func TestCacheKeepAlive(t *testing.T) {
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(50*time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	p.KeepAlive()
 
-	time.Sleep(450*time.Millisecond)
+	time.Sleep(450 * time.Millisecond)
 	p, err = table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
@@ -67,7 +67,7 @@ func TestCacheKeepAlive(t *testing.T) {
 	if err != nil || p == nil || p.Data().(string) != v2 {
 		t.Error("Error retrieving data from cache", err)
 	}
-	time.Sleep(1*time.Second)
+	time.Sleep(1 * time.Second)
 	p, err = table.Value(k2)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
@@ -99,7 +99,7 @@ func TestDelete(t *testing.T) {
 func TestFlush(t *testing.T) {
 	table := Cache("testFlush")
 	table.Cache(k, 10*time.Second, v)
-	time.Sleep(100*time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	table.Flush()
 
 	p, err := table.Value(k)
@@ -146,7 +146,7 @@ func TestCount(t *testing.T) {
 
 func TestDataLoader(t *testing.T) {
 	table := Cache("testDataLoader")
-	table.SetDataLoader(func(key interface{}) *CacheItem{
+	table.SetDataLoader(func(key interface{}) *CacheItem {
 		val := k + key.(string)
 		item := CreateCacheItem(key, 500*time.Millisecond, val)
 		return &item
@@ -176,12 +176,12 @@ func TestCallbacks(t *testing.T) {
 
 	table.Cache(k, 500*time.Millisecond, v)
 
-	time.Sleep(250*time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
 	if addedKey != k {
 		t.Error("AddedItem callback not working")
 	}
 
-	time.Sleep(500*time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	if removedKey != k {
 		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
 	}
