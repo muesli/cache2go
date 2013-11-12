@@ -203,9 +203,6 @@ func (table *CacheTable) expirationCheck() {
  / lifeSpan indicates how long this item will remain in the cache after its
  / last access
  / data is the cache-item value
- / The last parameter abouToExpireFunc can be nil. Otherwise abouToExpireFunc
- / will be called (with this item's key as its only parameter), right before
- / removing this item from the cache
 */
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheEntry {
 	entry := CreateCacheEntry(key, lifeSpan, data)
