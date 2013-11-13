@@ -14,28 +14,28 @@ import (
 	"time"
 )
 
-// Structure of a table with items in the cache
+// Structure of a table with items in the cache.
 type CacheTable struct {
 	sync.RWMutex
 
-	// The table's name
+	// The table's name.
 	name string
-	// All cached items
+	// All cached items.
 	items map[interface{}]*CacheItem
 
-	// Timer responsible for triggering cleanup
+	// Timer responsible for triggering cleanup.
 	cleanupTimer *time.Timer
-	// Current timer duration
+	// Current timer duration.
 	cleanupInterval time.Duration
 
-	// The logger used for this table
+	// The logger used for this table.
 	logger *log.Logger
 
-	// Callback method triggered when trying to load a non-existing key
+	// Callback method triggered when trying to load a non-existing key.
 	loadData func(interface{}) *CacheItem
-	// Callback method triggered when adding a new item to the cache
+	// Callback method triggered when adding a new item to the cache.
 	addedItem func(*CacheItem)
-	// Callback method triggered before deleting an item from the cache
+	// Callback method triggered before deleting an item from the cache.
 	aboutToDeleteItem func(*CacheItem)
 }
 
@@ -43,7 +43,6 @@ type CacheTable struct {
 func (table *CacheTable) Count() int {
 	table.RLock()
 	defer table.RUnlock()
-
 	return len(table.items)
 }
 
@@ -90,8 +89,7 @@ func (table *CacheTable) expirationCheck() {
 		table.log("Expiration check installed for table", table.name)
 	}
 
-	// Take a copy of the cache structure so we can iterate
-	// over it without blocking the mutex.
+	// Cache value so we don't keep blocking the mutex.
 	items := table.items
 	table.Unlock()
 
@@ -100,7 +98,7 @@ func (table *CacheTable) expirationCheck() {
 	now := time.Now()
 	smallestDuration := 0 * time.Second
 	for key, item := range items {
-		// Copy values so we don't have to keep blocking the mutex.
+		// Cache values so we don't keep blocking the mutex.
 		item.RLock()
 		lifeSpan := item.lifeSpan
 		accessedOn := item.accessedOn
@@ -139,22 +137,22 @@ func (table *CacheTable) expirationCheck() {
 func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
 	item := CreateCacheItem(key, lifeSpan, data)
 
-	// Add item to cache
+	// Add item to cache.
 	table.Lock()
 	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
 	table.items[key] = &item
+
+	// Cache values so we don't keep blocking the mutex.
 	expDur := table.cleanupInterval
+	addedItem := table.addedItem
 	table.Unlock()
 
-	// Trigger callback after adding an item to cache
-	table.RLock()
-	if table.addedItem != nil {
-		table.addedItem(&item)
+	// Trigger callback after adding an item to cache.
+	if addedItem != nil {
+		addedItem(&item)
 	}
-	// The expirationCheck call below has its own mutex protection.
-	table.RUnlock()
 
-	// If we haven't set up any expiration check timer or found a more imminent item
+	// If we haven't set up any expiration check timer or found a more imminent item.
 	if lifeSpan > 0 && (expDur == 0 || lifeSpan < expDur) {
 		table.expirationCheck()
 	}
@@ -166,17 +164,19 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
-
 	if !ok {
 		table.RUnlock()
 		return nil, errors.New("Key not found in cache")
 	}
 
-	// Trigger callbacks before deleting an item from cache.
-	if table.aboutToDeleteItem != nil {
-		table.aboutToDeleteItem(r)
-	}
+	// Cache value so we don't keep blocking the mutex.
+	aboutToDeleteItem := table.aboutToDeleteItem
 	table.RUnlock()
+
+	// Trigger callbacks before deleting an item from cache.
+	if aboutToDeleteItem != nil {
+		aboutToDeleteItem(r)
+	}
 
 	r.RLock()
 	defer r.RUnlock()
@@ -207,19 +207,20 @@ func (table *CacheTable) Exists(key interface{}) bool {
 func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
+	loadData := table.loadData
 	table.RUnlock()
 
 	if ok {
-		// Update access counter and timestamp
+		// Update access counter and timestamp.
 		r.KeepAlive()
 		return r, nil
 	}
 
 	// Item doesn't exist in cache. Try and fetch it with a data-loader.
-	if table.loadData != nil {
-		item := table.loadData(key)
-		table.Cache(key, item.lifeSpan, item.data)
+	if loadData != nil {
+		item := loadData(key)
 		if item != nil {
+			table.Cache(key, item.lifeSpan, item.data)
 			return item, nil
 		}
 
