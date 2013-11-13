@@ -146,8 +146,8 @@ func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data int
 	expDur := table.cleanupInterval
 	table.Unlock()
 
-	table.RLock()
 	// Trigger callback after adding an item to cache
+	table.RLock()
 	if table.addedItem != nil {
 		table.addedItem(&item)
 	}
