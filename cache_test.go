@@ -146,10 +146,10 @@ func TestCount(t *testing.T) {
 
 func TestDataLoader(t *testing.T) {
 	table := Cache("testDataLoader")
-	table.SetDataLoader(func(key interface{}) (*CacheItem, error) {
+	table.SetDataLoader(func(key interface{}) *CacheItem {
 		val := k + key.(string)
 		item := CreateCacheItem(key, 500*time.Millisecond, val)
-		return &item, nil
+		return &item
 	})
 
 	for i := 0; i < 10; i++ {
