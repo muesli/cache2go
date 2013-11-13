@@ -130,7 +130,7 @@ func TestCount(t *testing.T) {
 	table := Cache("testCount")
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
-		table.Cache(key, 2*time.Second, v)
+		table.Cache(key, 10*time.Second, v)
 	}
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
@@ -147,15 +147,25 @@ func TestCount(t *testing.T) {
 func TestDataLoader(t *testing.T) {
 	table := Cache("testDataLoader")
 	table.SetDataLoader(func(key interface{}) *CacheItem {
-		val := k + key.(string)
-		item := CreateCacheItem(key, 500*time.Millisecond, val)
-		return &item
+		var item *CacheItem
+		if key.(string) != "nil" {
+			val := k + key.(string)
+			i := CreateCacheItem(key, 500*time.Millisecond, val)
+			item = &i
+		}
+
+		return item
 	})
+
+	p, err := table.Value("nil")
+	if err == nil || table.Exists("nil") {
+		t.Error("Error validating data loader for nil values")
+	}
 
 	for i := 0; i < 10; i++ {
 		key := k + strconv.Itoa(i)
 		vp := k + key
-		p, err := table.Value(key)
+		p, err = table.Value(key)
 		if err != nil || p == nil || p.Data().(string) != vp {
 			t.Error("Error validating data loader")
 		}
