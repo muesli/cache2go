@@ -80,6 +80,6 @@ You can find a [few more examples here](https://github.com/rif/cache2go/tree/mas
 Also see our test-cases in cache_test.go for further working examples.
 
 ## Development
-API docs can be found [here](http://go.pkgdoc.org/github.com/rif/cache2go).
+API docs can be found [here](http://godoc.org/github.com/rif/cache2go).
 
 Continous integration: [![Build Status](https://secure.travis-ci.org/rif/cache2go.png)](http://travis-ci.org/rif/cache2go)
