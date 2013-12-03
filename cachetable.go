@@ -134,7 +134,7 @@ func (table *CacheTable) expirationCheck() {
 // Parameter lifeSpan determines after which time period without an access the item
 // will get removed from the cache.
 // Parameter data is the item's value.
-func (table *CacheTable) Cache(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
+func (table *CacheTable) Add(key interface{}, lifeSpan time.Duration, data interface{}) *CacheItem {
 	item := CreateCacheItem(key, lifeSpan, data)
 
 	// Add item to cache.
@@ -220,7 +220,7 @@ func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
 	if loadData != nil {
 		item := loadData(key)
 		if item != nil {
-			table.Cache(key, item.lifeSpan, item.data)
+			table.Add(key, item.lifeSpan, item.data)
 			return item, nil
 		}
 
