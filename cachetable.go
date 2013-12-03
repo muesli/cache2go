@@ -33,11 +33,11 @@ type CacheTable struct {
 	logger *log.Logger
 
 	// Callback method triggered when trying to load a non-existing key.
-	loadData func(interface{}) *CacheItem
+	loadData func(key interface{}) *CacheItem
 	// Callback method triggered when adding a new item to the cache.
-	addedItem func(*CacheItem)
+	addedItem func(item *CacheItem)
 	// Callback method triggered before deleting an item from the cache.
-	aboutToDeleteItem func(*CacheItem)
+	aboutToDeleteItem func(item *CacheItem)
 }
 
 // Returns how many items are currently stored in the cache.

@@ -32,7 +32,7 @@ type CacheItem struct {
 	accessCount int64
 
 	// Callback method triggered right before removing the item from the cache
-	aboutToExpire func(interface{})
+	aboutToExpire func(key interface{})
 }
 
 // Returns a newly created CacheItem.
