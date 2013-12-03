@@ -10,6 +10,7 @@ package cache2go
 import (
 	"errors"
 	"log"
+	"sort"
 	"sync"
 	"time"
 )
@@ -242,6 +243,42 @@ func (table *CacheTable) Flush() {
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
 	}
+}
+
+type Pair struct {
+	Key interface{}
+	Value int64
+}
+
+// A slice of Pairs that implements sort.Interface to sort by Value.
+type PairList []Pair
+func (p PairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
+func (p PairList) Len() int { return len(p) }
+func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+
+func (table *CacheTable) MostAccessed(count int64) []interface{} {
+	table.RLock()
+	defer table.RUnlock()
+
+	p := make(PairList, len(table.items))
+	i := 0
+	for k, v := range table.items {
+		p[i] = Pair{k, v.accessCount}
+		i++
+	}
+	sort.Sort(p)
+
+	var r []interface{}
+	c := int64(0)
+	for _, v := range p {
+		if c >= count {
+			break
+		}
+		r = append(r, v.Key)
+		c++
+	}
+
+	return r
 }
 
 // Internal logging method for convenience.
