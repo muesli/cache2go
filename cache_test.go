@@ -1,3 +1,10 @@
+/*
+ * Simple caching library with expiration capabilities
+ *     Copyright (c) 2013, Christian Muehlhaeuser <muesli@gmail.com>
+ *
+ *   For license see LICENSE.txt
+ */
+
 package cache2go
 
 import (
@@ -168,6 +175,26 @@ func TestDataLoader(t *testing.T) {
 		p, err = table.Value(key)
 		if err != nil || p == nil || p.Data().(string) != vp {
 			t.Error("Error validating data loader")
+		}
+	}
+}
+
+func TestAccessCount(t *testing.T) {
+	count := 100
+	table := Cache("testAccessCount")
+	for i := 0; i < count; i++ {
+		table.Add(i, 10*time.Second, v)
+	}
+	for i := 0; i < count; i++ {
+		for j := 0; j < i; j++ {
+			table.Value(i)
+		}
+	}
+
+	ma := table.MostAccessed(int64(count))
+	for i, key := range ma {
+		if key != count - 1 - i {
+			t.Error("Most accessed items seem to be sorted incorrectly")
 		}
 	}
 }
