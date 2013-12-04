@@ -25,6 +25,18 @@ func TestCache(t *testing.T) {
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
+	if p.AccessCount() != 1 {
+		t.Error("Error getting correct access count")
+	}
+	if p.LifeSpan() != 1*time.Second {
+		t.Error("Error getting correct life-span")
+	}
+	if p.AccessedOn().Unix() == 0 {
+		t.Error("Error getting access time")
+	}
+	if p.CreatedOn().Unix() == 0 {
+		t.Error("Error getting creation time")
+	}
 }
 
 func TestCacheExpire(t *testing.T) {
@@ -100,6 +112,12 @@ func TestDelete(t *testing.T) {
 	p, err = table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error deleting data")
+	}
+
+	// test error handling
+	_, err = table.Delete(k)
+	if err == nil {
+		t.Error("Error Expected error deleting item")
 	}
 }
 
@@ -202,6 +220,7 @@ func TestAccessCount(t *testing.T) {
 func TestCallbacks(t *testing.T) {
 	addedKey := ""
 	removedKey := ""
+	expired := false
 
 	table := Cache("testCallbacks")
 	table.SetAddedItemCallback(func(item *CacheItem) {
@@ -211,7 +230,10 @@ func TestCallbacks(t *testing.T) {
 		removedKey = item.Key().(string)
 	})
 
-	table.Add(k, 500*time.Millisecond, v)
+	i := table.Add(k, 500*time.Millisecond, v)
+	i.SetAboutToExpireCallback(func(key interface{}) {
+		expired = true
+	})
 
 	time.Sleep(250 * time.Millisecond)
 	if addedKey != k {
@@ -221,5 +243,8 @@ func TestCallbacks(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 	if removedKey != k {
 		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
+	}
+	if !expired {
+		t.Error("ExpireCallback callback not working")
 	}
 }
