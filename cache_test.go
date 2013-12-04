@@ -8,6 +8,8 @@
 package cache2go
 
 import (
+	"bytes"
+	"log"
 	"strconv"
 	"testing"
 	"time"
@@ -20,8 +22,13 @@ var (
 
 func TestCache(t *testing.T) {
 	table := Cache("testCache")
-	table.Add(k, 1*time.Second, v)
-	p, err := table.Value(k)
+	table.Add(k + "_1", 0*time.Second, v)
+	table.Add(k + "_2", 1*time.Second, v)
+	p, err := table.Value(k + "_1")
+	if err != nil || p == nil || p.Data().(string) != v {
+		t.Error("Error retrieving non expiring data from cache", err)
+	}
+	p, err = table.Value(k + "_2")
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
@@ -50,16 +57,6 @@ func TestCacheExpire(t *testing.T) {
 	p, err = table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error expiring data")
-	}
-}
-
-func TestCacheNonExpiring(t *testing.T) {
-	table := Cache("testNonExpiring")
-	table.Add(k, 0, v)
-	time.Sleep(500 * time.Millisecond)
-	p, err := table.Value(k)
-	if err != nil || p == nil || p.Data().(string) != v {
-		t.Error("Error retrieving data from cache", err)
 	}
 }
 
@@ -117,7 +114,7 @@ func TestDelete(t *testing.T) {
 	// test error handling
 	_, err = table.Delete(k)
 	if err == nil {
-		t.Error("Error Expected error deleting item")
+		t.Error("Expected error deleting item")
 	}
 }
 
@@ -215,6 +212,11 @@ func TestAccessCount(t *testing.T) {
 			t.Error("Most accessed items seem to be sorted incorrectly")
 		}
 	}
+
+	ma = table.MostAccessed(int64(count - 1))
+	if len(ma) != count - 1 {
+		t.Error("MostAccessed returns incorrect amount of items")
+	}
 }
 
 func TestCallbacks(t *testing.T) {
@@ -246,5 +248,18 @@ func TestCallbacks(t *testing.T) {
 	}
 	if !expired {
 		t.Error("ExpireCallback callback not working")
+	}
+}
+
+func TestLogger(t *testing.T) {
+	out := new(bytes.Buffer)
+	l := log.New(out, "cache2go ", log.Ldate|log.Ltime)
+
+	table := Cache("testLogger")
+	table.SetLogger(l)
+	table.Add(k, 1*time.Second, v)
+
+	if out.Len() == 0 {
+		t.Error("Logger is empty")
 	}
 }
