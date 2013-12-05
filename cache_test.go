@@ -21,9 +21,13 @@ var (
 )
 
 func TestCache(t *testing.T) {
+	// add an expiring item after a non-expiring one to
+	// trigger expirationCheck iterating over non-expiring items
 	table := Cache("testCache")
 	table.Add(k + "_1", 0*time.Second, v)
 	table.Add(k + "_2", 1*time.Second, v)
+
+	// check if both items are still there
 	p, err := table.Value(k + "_1")
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving non expiring data from cache", err)
@@ -32,6 +36,8 @@ func TestCache(t *testing.T) {
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
+
+	// sanity checks
 	if p.AccessCount() != 1 {
 		t.Error("Error getting correct access count")
 	}
@@ -47,12 +53,16 @@ func TestCache(t *testing.T) {
 }
 
 func TestCacheExpire(t *testing.T) {
+	// add an expiring item
 	table := Cache("testExpire")
 	table.Add(k, 250*time.Millisecond, v)
+	// check if it's cached
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
+
+	// let it expire and check if it has been removed from cache
 	time.Sleep(500 * time.Millisecond)
 	p, err = table.Value(k)
 	if err == nil || p != nil {
@@ -60,52 +70,50 @@ func TestCacheExpire(t *testing.T) {
 	}
 }
 
-func TestCacheKeepAlive(t *testing.T) {
-	k2 := k + k
-	v2 := v + v
-	table := Cache("testKeepAlive")
-	table.Add(k, 250*time.Millisecond, v)
-	table.Add(k2, 750*time.Millisecond, v2)
-
-	p, err := table.Value(k)
-	if err != nil || p == nil || p.Data().(string) != v {
-		t.Error("Error retrieving data from cache", err)
-	}
-	time.Sleep(50 * time.Millisecond)
-	p.KeepAlive()
-
-	time.Sleep(450 * time.Millisecond)
-	p, err = table.Value(k)
-	if err == nil || p != nil {
-		t.Error("Error expiring data")
-	}
-	p, err = table.Value(k2)
-	if err != nil || p == nil || p.Data().(string) != v2 {
-		t.Error("Error retrieving data from cache", err)
-	}
-	time.Sleep(1 * time.Second)
-	p, err = table.Value(k2)
-	if err == nil || p != nil {
-		t.Error("Error expiring data")
-	}
-}
-
 func TestExists(t *testing.T) {
+	// add an expiring item
 	table := Cache("testExists")
 	table.Add(k, 0, v)
+	// check if it exists
 	if !table.Exists(k) {
 		t.Error("Error verifying existing data in cache")
 	}
 }
 
+func TestCacheKeepAlive(t *testing.T) {
+	// add an expiring item
+	table := Cache("testKeepAlive")
+	p := table.Add(k, 100*time.Millisecond, v)
+
+	// keep it alive before it expires
+	time.Sleep(50 * time.Millisecond)
+	p.KeepAlive()
+
+	// check it's still alive after it was initially supposed to expire
+	time.Sleep(75 * time.Millisecond)
+	if !table.Exists(k) {
+		t.Error("Error keeping item alive")
+	}
+
+	// check it expires eventually
+	time.Sleep(75 * time.Millisecond)
+	if table.Exists(k) {
+		t.Error("Error expiring item after keeping it alive")
+	}
+}
+
 func TestDelete(t *testing.T) {
+	// add an item to the cache
 	table := Cache("testDelete")
 	table.Add(k, 0, v)
+	// check it's really cached
 	p, err := table.Value(k)
 	if err != nil || p == nil || p.Data().(string) != v {
 		t.Error("Error retrieving data from cache", err)
 	}
+	// try to delete it
 	table.Delete(k)
+	// verify it has been deleted
 	p, err = table.Value(k)
 	if err == nil || p != nil {
 		t.Error("Error deleting data")
@@ -119,41 +127,32 @@ func TestDelete(t *testing.T) {
 }
 
 func TestFlush(t *testing.T) {
+	// add an item to the cache
 	table := Cache("testFlush")
 	table.Add(k, 10*time.Second, v)
-	time.Sleep(100 * time.Millisecond)
+	// flush the entire table
 	table.Flush()
 
+	// try to retrieve the item
 	p, err := table.Value(k)
 	if err == nil || p != nil {
-		t.Error("Error expiring data")
+		t.Error("Error flushing table")
 	}
+	// make sure there's really nothing else left in the cache
 	if table.Count() != 0 {
-		t.Error("Error verifying empty table")
-	}
-}
-
-func TestFlushNoTimout(t *testing.T) {
-	table := Cache("testFlushNoTimeout")
-	table.Add(k, 10*time.Second, v)
-	table.Flush()
-
-	p, err := table.Value(k)
-	if err == nil || p != nil {
-		t.Error("Error expiring data")
-	}
-	if table.Count() != 0 {
-		t.Error("Error verifying empty table")
+		t.Error("Error verifying count of flushed table")
 	}
 }
 
 func TestCount(t *testing.T) {
-	count := 100000
+	// add a huge amount of items to the cache
 	table := Cache("testCount")
+	count := 100000
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
 		table.Add(key, 10*time.Second, v)
 	}
+	// confirm every single item has been cached
 	for i := 0; i < count; i++ {
 		key := k + strconv.Itoa(i)
 		p, err := table.Value(key)
@@ -161,12 +160,14 @@ func TestCount(t *testing.T) {
 			t.Error("Error retrieving data")
 		}
 	}
+	// make sure the item count matches (no dupes etc.)
 	if table.Count() != count {
 		t.Error("Data count mismatch")
 	}
 }
 
 func TestDataLoader(t *testing.T) {
+	// setup a cache with a configured data-loader
 	table := Cache("testDataLoader")
 	table.SetDataLoader(func(key interface{}) *CacheItem {
 		var item *CacheItem
@@ -179,11 +180,13 @@ func TestDataLoader(t *testing.T) {
 		return item
 	})
 
+	// make sure data-loader works as expected and handles unloadable keys
 	p, err := table.Value("nil")
 	if err == nil || table.Exists("nil") {
 		t.Error("Error validating data loader for nil values")
 	}
 
+	// retrieve a bunch of items via the data-loader
 	for i := 0; i < 10; i++ {
 		key := k + strconv.Itoa(i)
 		vp := k + key
@@ -195,17 +198,21 @@ func TestDataLoader(t *testing.T) {
 }
 
 func TestAccessCount(t *testing.T) {
+	// add 100 items to the cache
 	count := 100
 	table := Cache("testAccessCount")
 	for i := 0; i < count; i++ {
 		table.Add(i, 10*time.Second, v)
 	}
+	// never access the first item, access the second item once, the third
+	// twice and so on...
 	for i := 0; i < count; i++ {
 		for j := 0; j < i; j++ {
 			table.Value(i)
 		}
 	}
 
+	// check MostAccessed returns the items in correct order
 	ma := table.MostAccessed(int64(count))
 	for i, key := range ma {
 		if key != count - 1 - i {
@@ -213,6 +220,7 @@ func TestAccessCount(t *testing.T) {
 		}
 	}
 
+	// check MostAccessed returns the correct amount of items
 	ma = table.MostAccessed(int64(count - 1))
 	if len(ma) != count - 1 {
 		t.Error("MostAccessed returns incorrect amount of items")
@@ -224,6 +232,7 @@ func TestCallbacks(t *testing.T) {
 	removedKey := ""
 	expired := false
 
+	// setup a cache with AddedItem & SetAboutToDelete handlers configured
 	table := Cache("testCallbacks")
 	table.SetAddedItemCallback(func(item *CacheItem) {
 		addedKey = item.Key().(string)
@@ -232,33 +241,39 @@ func TestCallbacks(t *testing.T) {
 		removedKey = item.Key().(string)
 	})
 
+	// add an item to the cache and setup its AboutToExpire handler
 	i := table.Add(k, 500*time.Millisecond, v)
 	i.SetAboutToExpireCallback(func(key interface{}) {
 		expired = true
 	})
 
+	// verify the AddedItem handler works
 	time.Sleep(250 * time.Millisecond)
 	if addedKey != k {
 		t.Error("AddedItem callback not working")
 	}
-
+	// verify the AboutToDelete handler works
 	time.Sleep(500 * time.Millisecond)
 	if removedKey != k {
 		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
 	}
+	// verify the AboutToExpire handler works
 	if !expired {
-		t.Error("ExpireCallback callback not working")
+		t.Error("AboutToExpire callback not working")
 	}
 }
 
 func TestLogger(t *testing.T) {
+	// setup a logger
 	out := new(bytes.Buffer)
 	l := log.New(out, "cache2go ", log.Ldate|log.Ltime)
 
+	// setup a cache with this logger
 	table := Cache("testLogger")
 	table.SetLogger(l)
 	table.Add(k, 1*time.Second, v)
 
+	// verify the logger has been used
 	if out.Len() == 0 {
 		t.Error("Logger is empty")
 	}
