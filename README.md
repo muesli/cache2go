@@ -9,11 +9,11 @@ Make sure you have a working Go environment. See the [install instructions](http
 
 To install cache2go, simply run:
 
-    go get github.com/rif/cache2go
+    go get github.com/muesli/cache2go
 
 To compile it from source:
 
-    git clone git://github.com/rif/cache2go.git
+    git clone git://github.com/muesli/cache2go.git
     cd cache2go && go build && go test -v
 
 ## Example
@@ -21,7 +21,7 @@ To compile it from source:
 package main
 
 import (
-	"github.com/rif/cache2go"
+	"github.com/muesli/cache2go"
 	"fmt"
 	"time"
 )
@@ -76,10 +76,10 @@ To run the application, go to examples/mycachedapp/ and run:
 
     go run mycachedapp.go
 
-You can find a [few more examples here](https://github.com/rif/cache2go/tree/master/examples).
+You can find a [few more examples here](https://github.com/muesli/cache2go/tree/master/examples).
 Also see our test-cases in cache_test.go for further working examples.
 
 ## Development
-API docs can be found [here](http://godoc.org/github.com/rif/cache2go).
+API docs can be found [here](http://godoc.org/github.com/muesli/cache2go).
 
-Continous integration: [![Build Status](https://secure.travis-ci.org/rif/cache2go.png)](http://travis-ci.org/rif/cache2go)
+Continous integration: [![Build Status](https://secure.travis-ci.org/muesli/cache2go.png)](http://travis-ci.org/muesli/cache2go)
