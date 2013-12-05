@@ -39,7 +39,7 @@ func main() {
 	// We will put a new item in the cache. It will expire after
 	// not being accessed via Value(key) for more than 5 seconds.
 	val := myStruct{"This is a test!", []byte{}}
-	cache.Cache("someKey", 5*time.Second, &val)
+	cache.Add("someKey", 5*time.Second, &val)
 
 	// Let's retrieve the item from the cache.
 	res, err := cache.Value("someKey")
@@ -57,7 +57,7 @@ func main() {
 	}
 
 	// Add another item that never expires.
-	cache.Cache("someKey", 0, &val)
+	cache.Add("someKey", 0, &val)
 
 	// cache2go supports a few handy callbacks and loading mechanisms.
 	cache.SetAboutToDeleteItemCallback(func(e *cache2go.CacheItem) {

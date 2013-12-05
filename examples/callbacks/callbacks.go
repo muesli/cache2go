@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/rif/cache2go"
+	"github.com/muesli/cache2go"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	})
 
 	// Caching a new item will execute the AddedItem callback.
-	cache.Cache("someKey", 0, "This is a test!")
+	cache.Add("someKey", 0, "This is a test!")
 
 	// Let's retrieve the item from the cache
 	res, err := cache.Value("someKey")
