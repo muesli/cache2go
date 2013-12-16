@@ -256,7 +256,7 @@ func (p CacheItemPairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p CacheItemPairList) Len() int { return len(p) }
 func (p CacheItemPairList) Less(i, j int) bool { return p[i].AccessCount > p[j].AccessCount }
 
-func (table *CacheTable) MostAccessed(count int64) []interface{} {
+func (table *CacheTable) MostAccessed(count int64) []*CacheItem {
 	table.RLock()
 	defer table.RUnlock()
 
@@ -268,13 +268,17 @@ func (table *CacheTable) MostAccessed(count int64) []interface{} {
 	}
 	sort.Sort(p)
 
-	var r []interface{}
+	var r []*CacheItem
 	c := int64(0)
 	for _, v := range p {
 		if c >= count {
 			break
 		}
-		r = append(r, v.Key)
+
+		item, ok := table.items[v.Key]
+		if ok {
+			r = append(r, item)
+		}
 		c++
 	}
 

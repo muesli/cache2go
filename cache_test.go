@@ -214,8 +214,8 @@ func TestAccessCount(t *testing.T) {
 
 	// check MostAccessed returns the items in correct order
 	ma := table.MostAccessed(int64(count))
-	for i, key := range ma {
-		if key != count - 1 - i {
+	for i, item := range ma {
+		if item.Key() != count - 1 - i {
 			t.Error("Most accessed items seem to be sorted incorrectly")
 		}
 	}
