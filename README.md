@@ -72,7 +72,7 @@ func main() {
 }
 ```
 
-To run the application, go to examples/mycachedapp/ and run:
+To run this example, go to examples/mycachedapp/ and run:
 
     go run mycachedapp.go
 
