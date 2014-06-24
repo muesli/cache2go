@@ -82,4 +82,4 @@ Also see our test-cases in cache_test.go for further working examples.
 ## Development
 API docs can be found [here](http://godoc.org/github.com/muesli/cache2go).
 
-Continous integration: [![Build Status](https://secure.travis-ci.org/muesli/cache2go.png)](http://travis-ci.org/muesli/cache2go)
+Continuous integration: [![Build Status](https://secure.travis-ci.org/muesli/cache2go.png)](http://travis-ci.org/muesli/cache2go)
