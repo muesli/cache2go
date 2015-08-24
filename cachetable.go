@@ -46,6 +46,16 @@ func (table *CacheTable) Count() int {
 	return len(table.items)
 }
 
+// foreach all items
+func (table *CacheTable) Foreach(trans func(key interface{}, item *CacheItem)) {
+	table.RLock()
+	defer table.RUnlock()
+
+	for k, v := range table.items {
+		trans(k, v)
+	}
+}
+
 // Configures a data-loader callback, which will be called when trying
 // to use access a non-existing key.
 func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheItem) {
@@ -245,14 +255,15 @@ func (table *CacheTable) Flush() {
 }
 
 type CacheItemPair struct {
-	Key interface{}
+	Key         interface{}
 	AccessCount int64
 }
 
 // A slice of CacheIemPairs that implements sort. Interface to sort by AccessCount.
 type CacheItemPairList []CacheItemPair
-func (p CacheItemPairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
-func (p CacheItemPairList) Len() int { return len(p) }
+
+func (p CacheItemPairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p CacheItemPairList) Len() int           { return len(p) }
 func (p CacheItemPairList) Less(i, j int) bool { return p[i].AccessCount > p[j].AccessCount }
 
 func (table *CacheTable) MostAccessed(count int64) []*CacheItem {
