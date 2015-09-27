@@ -213,6 +213,37 @@ func (table *CacheTable) Exists(key interface{}) bool {
 	return ok
 }
 
+// Test whether an item not found in the cache. Unlike the Exists method
+// NotExistsAdd also add data if not found.
+func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, data interface{}) bool {
+	table.Lock()
+
+	if _, ok := table.items[key]; ok {
+		table.Unlock()
+		return false
+	}
+
+	item := CreateCacheItem(key, lifeSpan, data)
+	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
+	table.items[key] = &item
+
+	// Cache values so we don't keep blocking the mutex.
+	expDur := table.cleanupInterval
+	addedItem := table.addedItem
+	table.Unlock()
+
+	// Trigger callback after adding an item to cache.
+	if addedItem != nil {
+		addedItem(&item)
+	}
+
+	// If we haven't set up any expiration check timer or found a more imminent item.
+	if lifeSpan > 0 && (expDur == 0 || lifeSpan < expDur) {
+		table.expirationCheck()
+	}
+	return true
+}
+
 // Get an item from the cache and mark it to be kept alive.
 func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
 	table.RLock()
