@@ -11,6 +11,8 @@ import (
 	"bytes"
 	"log"
 	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -24,8 +26,8 @@ func TestCache(t *testing.T) {
 	// add an expiring item after a non-expiring one to
 	// trigger expirationCheck iterating over non-expiring items
 	table := Cache("testCache")
-	table.Add(k + "_1", 0*time.Second, v)
-	table.Add(k + "_2", 1*time.Second, v)
+	table.Add(k+"_1", 0*time.Second, v)
+	table.Add(k+"_2", 1*time.Second, v)
 
 	// check if both items are still there
 	p, err := table.Value(k + "_1")
@@ -78,6 +80,59 @@ func TestExists(t *testing.T) {
 	if !table.Exists(k) {
 		t.Error("Error verifying existing data in cache")
 	}
+}
+
+func TestNotFoundAdd(t *testing.T) {
+	table := Cache("testNotFoundAdd")
+
+	if !table.NotFoundAdd(k, 0, v) {
+		t.Error("Error verifying NotFoundAdd, data not in cache")
+	}
+
+	if table.NotFoundAdd(k, 0, v) {
+		t.Error("Error verifying NotFoundAdd data in cache")
+	}
+}
+
+func TestNotFoundAddConcurrency(t *testing.T) {
+	table := Cache("testNotFoundAdd")
+
+	var finish sync.WaitGroup
+	var added int32
+	var idle int32
+
+	fn := func(id int) {
+		for i := 0; i < 100; i++ {
+			if table.NotFoundAdd(i, 0, i+id) {
+				atomic.AddInt32(&added, 1)
+			} else {
+				atomic.AddInt32(&idle, 1)
+			}
+			time.Sleep(0)
+		}
+		finish.Done()
+	}
+
+	finish.Add(10)
+	go fn(0x0000)
+	go fn(0x1100)
+	go fn(0x2200)
+	go fn(0x3300)
+	go fn(0x4400)
+	go fn(0x5500)
+	go fn(0x6600)
+	go fn(0x7700)
+	go fn(0x8800)
+	go fn(0x9900)
+	finish.Wait()
+
+	t.Log(added, idle)
+
+	table.Foreach(func(key interface{}, item *CacheItem) {
+		v, _ := item.Data().(int)
+		k, _ := key.(int)
+		t.Logf("%02x  %04x\n", k, v)
+	})
 }
 
 func TestCacheKeepAlive(t *testing.T) {
@@ -215,14 +270,14 @@ func TestAccessCount(t *testing.T) {
 	// check MostAccessed returns the items in correct order
 	ma := table.MostAccessed(int64(count))
 	for i, item := range ma {
-		if item.Key() != count - 1 - i {
+		if item.Key() != count-1-i {
 			t.Error("Most accessed items seem to be sorted incorrectly")
 		}
 	}
 
 	// check MostAccessed returns the correct amount of items
 	ma = table.MostAccessed(int64(count - 1))
-	if len(ma) != count - 1 {
+	if len(ma) != count-1 {
 		t.Error("MostAccessed returns incorrect amount of items")
 	}
 }
