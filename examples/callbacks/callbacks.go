@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/muesli/cache2go"
 )
 
@@ -32,4 +34,14 @@ func main() {
 
 	// Deleting the item will execute the AboutToDeleteItem callback.
 	cache.Delete("someKey")
+
+	// Caching a new item that expires in 3 seconds
+	res = cache.Add("anotherKey", 3*time.Second, "This is another test")
+
+	// This callback will be triggered when the item is about to expire
+	res.SetAboutToExpireCallback(func(key interface{}) {
+		fmt.Println("About to expire:", key.(string))
+	})
+
+	time.Sleep(5 * time.Second)
 }
