@@ -224,7 +224,7 @@ func TestCount(t *testing.T) {
 func TestDataLoader(t *testing.T) {
 	// setup a cache with a configured data-loader
 	table := Cache("testDataLoader")
-	table.SetDataLoader(func(key interface{}) *CacheItem {
+	table.SetDataLoader(func(key interface{}, args ...interface{}) *CacheItem {
 		var item *CacheItem
 		if key.(string) != "nil" {
 			val := k + key.(string)

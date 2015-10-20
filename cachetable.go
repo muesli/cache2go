@@ -32,7 +32,7 @@ type CacheTable struct {
 	logger *log.Logger
 
 	// Callback method triggered when trying to load a non-existing key.
-	loadData func(key interface{}) *CacheItem
+	loadData func(key interface{}, args ...interface{}) *CacheItem
 	// Callback method triggered when adding a new item to the cache.
 	addedItem func(item *CacheItem)
 	// Callback method triggered before deleting an item from the cache.
@@ -58,7 +58,7 @@ func (table *CacheTable) Foreach(trans func(key interface{}, item *CacheItem)) {
 
 // Configures a data-loader callback, which will be called when trying
 // to use access a non-existing key.
-func (table *CacheTable) SetDataLoader(f func(interface{}) *CacheItem) {
+func (table *CacheTable) SetDataLoader(f func(interface{}, ...interface{}) *CacheItem) {
 	table.Lock()
 	defer table.Unlock()
 	table.loadData = f
@@ -245,7 +245,7 @@ func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, da
 }
 
 // Get an item from the cache and mark it to be kept alive.
-func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
+func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
 	loadData := table.loadData
@@ -259,7 +259,7 @@ func (table *CacheTable) Value(key interface{}) (*CacheItem, error) {
 
 	// Item doesn't exist in cache. Try and fetch it with a data-loader.
 	if loadData != nil {
-		item := loadData(key)
+		item := loadData(key, args)
 		if item != nil {
 			table.Add(key, item.lifeSpan, item.data)
 			return item, nil
