@@ -57,7 +57,8 @@ func (table *CacheTable) Foreach(trans func(key interface{}, item *CacheItem)) {
 }
 
 // Configures a data-loader callback, which will be called when trying
-// to use access a non-existing key.
+// to access a non-existing key. The key and 0...n additional arguments
+// are passed to the callback function.
 func (table *CacheTable) SetDataLoader(f func(interface{}, ...interface{}) *CacheItem) {
 	table.Lock()
 	defer table.Unlock()
@@ -244,7 +245,8 @@ func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, da
 	return true
 }
 
-// Get an item from the cache and mark it to be kept alive.
+// Get an item from the cache and mark it to be kept alive. You can pass
+// additional arguments to your DataLoader callback function.
 func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
