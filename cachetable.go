@@ -259,7 +259,7 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 
 	// Item doesn't exist in cache. Try and fetch it with a data-loader.
 	if loadData != nil {
-		item := loadData(key, args)
+		item := loadData(key, args...)
 		if item != nil {
 			table.Add(key, item.lifeSpan, item.data)
 			return item, nil
