@@ -11,7 +11,7 @@ func main() {
 
 	// The data loader gets called automatically whenever something
 	// tries to retrieve a non-existing key from the cache.
-	cache.SetDataLoader(func(key interface{}) *cache2go.CacheItem {
+	cache.SetDataLoader(func(key interface{}, args ...interface{}) *cache2go.CacheItem {
 		// Apply some clever loading logic here, e.g. read values for
 		// this key from database, network or file.
 		val := "This is a test with key " + key.(string)
