@@ -123,7 +123,7 @@ func (table *CacheTable) expirationCheck() {
 			table.Delete(key)
 		} else {
 			// Find the item chronologically closest to its end-of-lifespan.
-			if smallestDuration == 0 || lifeSpan < smallestDuration {
+			if smallestDuration == 0 || lifeSpan-now.Sub(accessedOn) < smallestDuration {
 				smallestDuration = lifeSpan - now.Sub(accessedOn)
 			}
 		}
