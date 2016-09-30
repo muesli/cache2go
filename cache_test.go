@@ -9,6 +9,7 @@ package cache2go
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -331,5 +332,44 @@ func TestLogger(t *testing.T) {
 	// verify the logger has been used
 	if out.Len() == 0 {
 		t.Error("Logger is empty")
+	}
+}
+
+func Test(t *testing.T) {
+	table := Cache("testCache")
+
+	// key `1` will survive until 4 second
+	table.Add(k+"_1", 4*time.Second, v+"_1")
+	// key `2` will survive until 6 second
+	table.Add(k+"_2", 6*time.Second, v+"_2")
+
+	time.Sleep(3 * time.Second)
+
+	// now is 3 second.
+	// visit key `1`, and it will survive until 7 second (now is 3 second, and its lifespan is 4 seconds)
+	res, err := table.Value(k + "_1")
+	if err == nil {
+		fmt.Println("Found value in cache:", res.Data().(string))
+	} else {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	time.Sleep(3500 * time.Millisecond)
+
+	// now is 6.5 second
+	// visit key `1` again, it is alive (6.5 < 7)
+	res, err = table.Value(k + "_1")
+	if err == nil {
+		fmt.Println("Found value in cache:", res.Data().(string))
+	} else {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	// visit key `2`, it should be removed at 6 second, but it is still alive in old version
+	res, err = table.Value(k + "_2")
+	if err == nil {
+		t.Error("key 2 is still alive")
+	} else {
+		fmt.Println("Error retrieving value from cache:", err)
 	}
 }
