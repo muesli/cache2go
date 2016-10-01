@@ -55,20 +55,31 @@ func TestCache(t *testing.T) {
 }
 
 func TestCacheExpire(t *testing.T) {
-	// add an expiring item
-	table := Cache("testExpire")
-	table.Add(k, 250*time.Millisecond, v)
-	// check if it's cached
-	p, err := table.Value(k)
-	if err != nil || p == nil || p.Data().(string) != v {
-		t.Error("Error retrieving data from cache", err)
+	table := Cache("testCache")
+
+	table.Add(k+"_1", 100*time.Millisecond, v+"_1")
+	table.Add(k+"_2", 125*time.Millisecond, v+"_2")
+
+	time.Sleep(75 * time.Millisecond)
+
+	// check key `1` is still alive
+	_, err := table.Value(k + "_1")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
 	}
 
-	// let it expire and check if it has been removed from cache
-	time.Sleep(500 * time.Millisecond)
-	p, err = table.Value(k)
-	if err == nil || p != nil {
-		t.Error("Error expiring data")
+	time.Sleep(75 * time.Millisecond)
+
+	// check key `1` again, it should still be alive since we just accessed it
+	_, err = table.Value(k + "_1")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	// check key `2`, it should have been removed by now
+	_, err = table.Value(k + "_2")
+	if err == nil {
+		t.Error("Found key which should have been expired by now")
 	}
 }
 
