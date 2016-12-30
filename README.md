@@ -1,7 +1,7 @@
 cache2go
 ========
 
-Simple golang object caching library with expiration capabilities.
+Concurrency-safe golang caching library with expiration capabilities.
 
 ## Installation
 
