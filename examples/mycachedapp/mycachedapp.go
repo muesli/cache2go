@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/muesli/cache2go"
 	"fmt"
 	"time"
+
+	"github.com/muesli/cache2go"
 )
 
 // Keys & values in cache2go can be off arbitrary types, e.g. a struct.
