@@ -13,8 +13,8 @@ To install cache2go, simply run:
 
 To compile it from source:
 
-    git clone git://github.com/muesli/cache2go.git
-    cd cache2go && go build && go test -v
+    cd $GOPATH/src/github.com/muesli/cache2go
+    go build && go test -v
 
 ## Example
 ```go
@@ -80,6 +80,9 @@ You can find a [few more examples here](https://github.com/muesli/cache2go/tree/
 Also see our test-cases in cache_test.go for further working examples.
 
 ## Development
+
 API docs can be found [here](http://godoc.org/github.com/muesli/cache2go).
 
-Continuous integration: [![Build Status](https://secure.travis-ci.org/muesli/cache2go.png)](http://travis-ci.org/muesli/cache2go)
+[![Build Status](https://secure.travis-ci.org/muesli/cache2go.png)](http://travis-ci.org/muesli/cache2go)
+[![Coverage Status](https://coveralls.io/repos/github/muesli/cache2go/badge.svg?branch=master)](https://coveralls.io/github/muesli/cache2go?branch=master)
+[![Go ReportCard](http://goreportcard.com/badge/muesli/cache2go)](http://goreportcard.com/report/muesli/cache2go)
