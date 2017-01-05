@@ -14,6 +14,7 @@ To install cache2go, simply run:
 To compile it from source:
 
     cd $GOPATH/src/github.com/muesli/cache2go
+    go get -u -v
     go build && go test -v
 
 ## Example
