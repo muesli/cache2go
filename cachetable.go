@@ -223,25 +223,8 @@ func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, da
 		table.Unlock()
 		return false
 	}
-
-	item := CreateCacheItem(key, lifeSpan, data)
-	table.log("Adding item with key", key, "and lifespan of", lifeSpan, "to table", table.name)
-	table.items[key] = &item
-
-	// Cache values so we don't keep blocking the mutex.
-	expDur := table.cleanupInterval
-	addedItem := table.addedItem
 	table.Unlock()
-
-	// Trigger callback after adding an item to cache.
-	if addedItem != nil {
-		addedItem(&item)
-	}
-
-	// If we haven't set up any expiration check timer or found a more imminent item.
-	if lifeSpan > 0 && (expDur == 0 || lifeSpan < expDur) {
-		table.expirationCheck()
-	}
+	table.Add(key, lifeSpan, data)
 	return true
 }
 
