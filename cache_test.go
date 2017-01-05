@@ -239,8 +239,8 @@ func TestDataLoader(t *testing.T) {
 		var item *CacheItem
 		if key.(string) != "nil" {
 			val := k + key.(string)
-			i := CreateCacheItem(key, 500*time.Millisecond, val)
-			item = &i
+			i := NewCacheItem(key, 500*time.Millisecond, val)
+			item = i
 		}
 
 		return item

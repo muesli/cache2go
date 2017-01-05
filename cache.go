@@ -17,7 +17,7 @@ var (
 	mutex sync.RWMutex
 )
 
-// Returns the existing cache table with given name or creates a new one
+// Cache returns the existing cache table with given name or creates a new one
 // if the table does not exist yet.
 func Cache(table string) *CacheTable {
 	mutex.RLock()

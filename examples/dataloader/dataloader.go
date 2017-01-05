@@ -17,8 +17,8 @@ func main() {
 		val := "This is a test with key " + key.(string)
 
 		// This helper method creates the cached item for us. Yay!
-		item := cache2go.CreateCacheItem(key, 0, val)
-		return &item
+		item := cache2go.NewCacheItem(key, 0, val)
+		return item
 	})
 
 	// Let's retrieve a few auto-generated items from the cache.
