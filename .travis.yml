@@ -19,7 +19,7 @@ before_install:
 
 script:
 - go test -v -tags ci ./...
-- $GOPATH/bin/goveralls -service=travis-ci -ignore examples/callbacks/callbacks.go examples/dataloader/dataloader.go examples/mycachedapp/mycachedapp.go
+- $GOPATH/bin/goveralls -service=travis-ci -ignore="examples/callbacks/callbacks.go,examples/dataloader/dataloader.go,examples/mycachedapp/mycachedapp.go"
 
 notifications:
   email:
