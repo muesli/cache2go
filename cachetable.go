@@ -133,9 +133,7 @@ func (table *CacheTable) expirationCheck() {
 	table.Lock()
 	table.cleanupInterval = smallestDuration
 	if smallestDuration > 0 {
-		table.cleanupTimer = time.AfterFunc(smallestDuration, func() {
-			go table.expirationCheck()
-		})
+		table.cleanupTimer = time.AfterFunc(smallestDuration, table.expirationCheck)
 	}
 	table.Unlock()
 }
