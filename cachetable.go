@@ -100,15 +100,11 @@ func (table *CacheTable) expirationCheck() {
 		table.log("Expiration check installed for table", table.name)
 	}
 
-	// Cache value so we don't keep blocking the mutex.
-	items := table.items
-	table.Unlock()
-
 	// To be more accurate with timers, we would need to update 'now' on every
 	// loop iteration. Not sure it's really efficient though.
 	now := time.Now()
 	smallestDuration := 0 * time.Second
-	for key, item := range items {
+	for key, item := range table.items {
 		// Cache values so we don't keep blocking the mutex.
 		item.RLock()
 		lifeSpan := item.lifeSpan
@@ -120,7 +116,7 @@ func (table *CacheTable) expirationCheck() {
 		}
 		if now.Sub(accessedOn) >= lifeSpan {
 			// Item has excessed its lifespan.
-			table.Delete(key)
+			table.deleteInternal(key)
 		} else {
 			// Find the item chronologically closest to its end-of-lifespan.
 			if smallestDuration == 0 || lifeSpan-now.Sub(accessedOn) < smallestDuration {
@@ -130,7 +126,6 @@ func (table *CacheTable) expirationCheck() {
 	}
 
 	// Setup the interval for the next cleanup run.
-	table.Lock()
 	table.cleanupInterval = smallestDuration
 	if smallestDuration > 0 {
 		table.cleanupTimer = time.AfterFunc(smallestDuration, func() {
@@ -177,18 +172,15 @@ func (table *CacheTable) Add(key interface{}, lifeSpan time.Duration, data inter
 	return item
 }
 
-// Delete an item from the cache.
-func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
-	table.RLock()
+func (table *CacheTable) deleteInternal(key interface{}) (*CacheItem, error) {
 	r, ok := table.items[key]
 	if !ok {
-		table.RUnlock()
 		return nil, ErrKeyNotFound
 	}
 
 	// Cache value so we don't keep blocking the mutex.
 	aboutToDeleteItem := table.aboutToDeleteItem
-	table.RUnlock()
+	table.Unlock()
 
 	// Trigger callbacks before deleting an item from cache.
 	if aboutToDeleteItem != nil {
@@ -202,11 +194,18 @@ func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
 	}
 
 	table.Lock()
-	defer table.Unlock()
 	table.log("Deleting item with key", key, "created on", r.createdOn, "and hit", r.accessCount, "times from table", table.name)
 	delete(table.items, key)
 
 	return r, nil
+}
+
+// Delete an item from the cache.
+func (table *CacheTable) Delete(key interface{}) (*CacheItem, error) {
+	table.Lock()
+	defer table.Unlock()
+
+	return table.deleteInternal(key)
 }
 
 // Exists returns whether an item exists in the cache. Unlike the Value method
