@@ -294,6 +294,7 @@ func TestAccessCount(t *testing.T) {
 }
 
 func TestCallbacks(t *testing.T) {
+	var m sync.Mutex
 	addedKey := ""
 	removedKey := ""
 	expired := false
@@ -301,25 +302,35 @@ func TestCallbacks(t *testing.T) {
 	// setup a cache with AddedItem & SetAboutToDelete handlers configured
 	table := Cache("testCallbacks")
 	table.SetAddedItemCallback(func(item *CacheItem) {
+		m.Lock()
 		addedKey = item.Key().(string)
+		m.Unlock()
 	})
 	table.SetAboutToDeleteItemCallback(func(item *CacheItem) {
+		m.Lock()
 		removedKey = item.Key().(string)
+		m.Unlock()
 	})
 
 	// add an item to the cache and setup its AboutToExpire handler
 	i := table.Add(k, 500*time.Millisecond, v)
 	i.SetAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
 		expired = true
+		m.Unlock()
 	})
 
 	// verify the AddedItem handler works
 	time.Sleep(250 * time.Millisecond)
+	m.Lock()
 	if addedKey != k {
 		t.Error("AddedItem callback not working")
 	}
+	m.Unlock()
+
 	// verify the AboutToDelete handler works
 	time.Sleep(500 * time.Millisecond)
+	m.Lock()
 	if removedKey != k {
 		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
 	}
@@ -327,6 +338,7 @@ func TestCallbacks(t *testing.T) {
 	if !expired {
 		t.Error("AboutToExpire callback not working")
 	}
+	m.Unlock()
 }
 
 func TestLogger(t *testing.T) {
@@ -337,7 +349,9 @@ func TestLogger(t *testing.T) {
 	// setup a cache with this logger
 	table := Cache("testLogger")
 	table.SetLogger(l)
-	table.Add(k, 1*time.Second, v)
+	table.Add(k, 0, v)
+
+	time.Sleep(100 * time.Millisecond)
 
 	// verify the logger has been used
 	if out.Len() == 0 {
