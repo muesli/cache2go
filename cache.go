@@ -25,13 +25,16 @@ func Cache(table string) *CacheTable {
 	mutex.RUnlock()
 
 	if !ok {
-		t = &CacheTable{
-			name:  table,
-			items: make(map[interface{}]*CacheItem),
-		}
-
 		mutex.Lock()
-		cache[table] = t
+		t, ok = cache[table]
+		// Double check whether the table exists or not.
+		if !ok {
+			t = &CacheTable{
+				name:  table,
+				items: make(map[interface{}]*CacheItem),
+			}
+			cache[table] = t
+		}
 		mutex.Unlock()
 	}
 
