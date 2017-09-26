@@ -26,7 +26,7 @@ type CacheTable struct {
 	// Timer responsible for triggering cleanup.
 	cleanupTimer *time.Timer
 	// Current timer duration.
-	cleanupInterval time.Duration
+	cleanupStartAt *time.Time
 
 	// The logger used for this table.
 	logger *log.Logger
@@ -93,9 +93,10 @@ func (table *CacheTable) expirationCheck() {
 	table.Lock()
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
+		table.cleanupTimer = nil
 	}
-	if table.cleanupInterval > 0 {
-		table.log("Expiration check triggered after", table.cleanupInterval, "for table", table.name)
+	if table.cleanupStartAt != nil {
+		table.log("Expiration check triggered on", table.cleanupStartAt, "for table", table.name)
 	} else {
 		table.log("Expiration check installed for table", table.name)
 	}
@@ -126,13 +127,22 @@ func (table *CacheTable) expirationCheck() {
 	}
 
 	// Setup the interval for the next cleanup run.
-	table.cleanupInterval = smallestDuration
-	if smallestDuration > 0 {
-		table.cleanupTimer = time.AfterFunc(smallestDuration, func() {
+	now = now.Add(smallestDuration)
+	table.cleanupStartAt = &now
+	table.addExpirationCheck()
+	table.Unlock()
+}
+
+func (table *CacheTable) addExpirationCheck() {
+	if table.cleanupStartAt != nil {
+		duration := table.cleanupStartAt.Sub(time.Now())
+		if duration < 0 {
+			return
+		}
+		table.cleanupTimer = time.AfterFunc(duration, func() {
 			go table.expirationCheck()
 		})
 	}
-	table.Unlock()
 }
 
 func (table *CacheTable) addInternal(item *CacheItem) {
@@ -142,7 +152,6 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 	table.items[item.key] = item
 
 	// Cache values so we don't keep blocking the mutex.
-	expDur := table.cleanupInterval
 	addedItem := table.addedItem
 	table.Unlock()
 
@@ -152,9 +161,13 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 	}
 
 	// If we haven't set up any expiration check timer or found a more imminent item.
-	if item.lifeSpan > 0 && (expDur == 0 || item.lifeSpan < expDur) {
-		table.expirationCheck()
+	table.Lock()
+	now := time.Now().Add(item.lifeSpan)
+	if item.lifeSpan > 0 && (table.cleanupStartAt == nil || now.Before(*table.cleanupStartAt)) {
+		table.cleanupStartAt = &now
+		table.addExpirationCheck()
 	}
+	table.Unlock()
 }
 
 // Add adds a key/value pair to the cache.
@@ -271,9 +284,10 @@ func (table *CacheTable) Flush() {
 	table.log("Flushing table", table.name)
 
 	table.items = make(map[interface{}]*CacheItem)
-	table.cleanupInterval = 0
+	table.cleanupStartAt = nil
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
+		table.cleanupTimer = nil
 	}
 }
 
