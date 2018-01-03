@@ -7,7 +7,7 @@ import (
 	"github.com/muesli/cache2go"
 )
 
-// Keys & values in cache2go can be off arbitrary types, e.g. a struct.
+// Keys & values in cache2go can be of arbitrary types, e.g. a struct.
 type myStruct struct {
 	text     string
 	moreData []byte
