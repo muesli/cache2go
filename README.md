@@ -5,7 +5,8 @@ Concurrency-safe golang caching library with expiration capabilities.
 
 ## Installation
 
-Make sure you have a working Go environment. See the [install instructions](http://golang.org/doc/install.html).
+Make sure you have a working Go environment (Go 1.2 or higher is required).
+See the [install instructions](http://golang.org/doc/install.html).
 
 To install cache2go, simply run:
 
