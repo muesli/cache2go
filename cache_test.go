@@ -210,6 +210,33 @@ func TestFlush(t *testing.T) {
 	}
 }
 
+func TestDeleteAll(t *testing.T) {
+	table := Cache("testDeleteAll")
+	called := false
+
+	table.SetAboutToDeleteItemCallback(func(item *CacheItem) {
+		called = true
+	})
+
+	table.Add(k, 10*time.Second, v)
+	// flush the entire table
+	table.DeleteAll()
+
+	if !called {
+		t.Fail()
+	}
+
+	// try to retrieve the item
+	p, err := table.Value(k)
+	if err == nil || p != nil {
+		t.Error("Error flushing table")
+	}
+	// make sure there's really nothing else left in the cache
+	if table.Count() != 0 {
+		t.Error("Error verifying count of flushed table")
+	}
+}
+
 func TestCount(t *testing.T) {
 	// add a huge amount of items to the cache
 	table := Cache("testCount")
@@ -233,6 +260,8 @@ func TestCount(t *testing.T) {
 }
 
 func TestDataLoader(t *testing.T) {
+	called := 0
+
 	// setup a cache with a configured data-loader
 	table := Cache("testDataLoader")
 	table.SetDataLoader(func(key interface{}, args ...interface{}) *CacheItem {
@@ -240,6 +269,9 @@ func TestDataLoader(t *testing.T) {
 		if key.(string) != "nil" {
 			val := k + key.(string)
 			i := NewCacheItem(key, 500*time.Millisecond, val)
+			i.SetAboutToExpireCallback(func(key interface{}) {
+				called++
+			})
 			item = i
 		}
 
@@ -260,6 +292,12 @@ func TestDataLoader(t *testing.T) {
 		if err != nil || p == nil || p.Data().(string) != vp {
 			t.Error("Error validating data loader")
 		}
+
+		table.Delete(key)
+	}
+
+	if called != 10 {
+		t.Fail()
 	}
 }
 
