@@ -327,5 +327,5 @@ func (table *CacheTable) log(v ...interface{}) {
 		return
 	}
 
-	table.logger.Println(v)
+	table.logger.Println(v...)
 }
