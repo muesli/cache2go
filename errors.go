@@ -21,4 +21,6 @@ var (
 	ErrKeyTypeNotHash = errors.New("Key type is not hash")
 	// ErrKeyTypeNotList gets returned when cacheitem data is not list type
 	ErrKeyTypeNotList = errors.New("Key type is not list")
+	// ErrKeyTypeNotSet gets returned when cacheitem data is not set type
+	ErrKeyTypeNotSet = errors.New("Key type is not set")
 )
