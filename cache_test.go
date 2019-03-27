@@ -314,7 +314,7 @@ func TestCallbacks(t *testing.T) {
 
 	// add an item to the cache and setup its AboutToExpire handler
 	i := table.Add(k, 500*time.Millisecond, v)
-	i.SetAboutToExpireCallback(func(key interface{}) {
+	i.SetAboutToExpireCallback(func(key *CacheItem) {
 		m.Lock()
 		expired = true
 		m.Unlock()

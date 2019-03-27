@@ -190,7 +190,7 @@ func (table *CacheTable) deleteInternal(key interface{}) (*CacheItem, error) {
 	r.RLock()
 	defer r.RUnlock()
 	if r.aboutToExpire != nil {
-		r.aboutToExpire(key)
+		r.aboutToExpire(r)
 	}
 
 	table.Lock()
