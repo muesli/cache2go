@@ -327,7 +327,6 @@ func TestCallbacks(t *testing.T) {
 		t.Error("AddedItem callback not working")
 	}
 	m.Unlock()
-
 	// verify the AboutToDelete handler works
 	time.Sleep(500 * time.Millisecond)
 	m.Lock()
@@ -339,8 +338,39 @@ func TestCallbacks(t *testing.T) {
 		t.Error("AboutToExpire callback not working")
 	}
 	m.Unlock()
-}
 
+	// test removeing of the callbacks
+	table.RemoveAddedItemCallbacks()
+	table.RemoveAboutToDeleteItemCallback()
+	secondItemKey := "itemKey02"
+	expired = false
+	i = table.Add(secondItemKey, 500*time.Millisecond, v)
+	i.SetAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
+		expired = true
+		m.Unlock()
+	})
+	i.RemoveAboutToExpireCallback()
+	//verify if the callbacks were removed
+	time.Sleep(250 * time.Millisecond)
+	m.Lock()
+	if addedKey == secondItemKey {
+		t.Error("AddedItemCallbacks were not removed")
+	}
+	m.Unlock()
+
+	// verify the AboutToDelete handler works
+	time.Sleep(500 * time.Millisecond)
+	m.Lock()
+	if removedKey == secondItemKey {
+		t.Error("AboutToDeleteItem not removed")
+	}
+	// verify the AboutToExpire handler works
+	if expired {
+		t.Error("AboutToExpire callback not removed")
+	}
+	m.Unlock()
+}
 func TestLogger(t *testing.T) {
 	// setup a logger
 	out := new(bytes.Buffer)
