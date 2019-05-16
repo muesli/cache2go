@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/trapajim/cache2go"
+	"github.com/muesli/cache2go"
 )
 
 func main() {
@@ -38,7 +38,6 @@ func main() {
 	// Deleting the item will execute the AboutToDeleteItem callback.
 	cache.Delete("someKey")
 
-	//remove AddedItemCallbacks
 	cache.RemoveAddedItemCallbacks()
 	// Caching a new item that expires in 3 seconds
 	res = cache.Add("anotherKey", 3*time.Second, "This is another test")
