@@ -68,6 +68,16 @@ func (table *CacheTable) SetDataLoader(f func(interface{}, ...interface{}) *Cach
 // SetAddedItemCallback configures a callback, which will be called every time
 // a new item is added to the cache.
 func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
+	if len(table.addedItem) > 0 {
+		table.RemoveAddedItemCallbacks()
+	}
+	table.Lock()
+	defer table.Unlock()
+	table.addedItem = append(table.addedItem, f)
+}
+
+//AddAddedItemCallback appends a new callback to the addedItem queue
+func (table *CacheTable) AddAddedItemCallback(f func(*CacheItem)) {
 	table.Lock()
 	defer table.Unlock()
 	table.addedItem = append(table.addedItem, f)
@@ -83,6 +93,16 @@ func (table *CacheTable) RemoveAddedItemCallbacks() {
 // SetAboutToDeleteItemCallback configures a callback, which will be called
 // every time an item is about to be removed from the cache.
 func (table *CacheTable) SetAboutToDeleteItemCallback(f func(*CacheItem)) {
+	if len(table.aboutToDeleteItem) > 0 {
+		table.RemoveAboutToDeleteItemCallback()
+	}
+	table.Lock()
+	defer table.Unlock()
+	table.aboutToDeleteItem = append(table.aboutToDeleteItem, f)
+}
+
+// AddAboutToDeleteItemCallback appends a new callback to the AboutToDeleteItem queue
+func (table *CacheTable) AddAboutToDeleteItemCallback(f func(*CacheItem)) {
 	table.Lock()
 	defer table.Unlock()
 	table.aboutToDeleteItem = append(table.aboutToDeleteItem, f)

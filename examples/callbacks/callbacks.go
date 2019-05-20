@@ -15,7 +15,7 @@ func main() {
 	cache.SetAddedItemCallback(func(entry *cache2go.CacheItem) {
 		fmt.Println("Added Callback 1:", entry.Key(), entry.Data(), entry.CreatedOn())
 	})
-	cache.SetAddedItemCallback(func(entry *cache2go.CacheItem) {
+	cache.AddAddedItemCallback(func(entry *cache2go.CacheItem) {
 		fmt.Println("Added Callback 2:", entry.Key(), entry.Data(), entry.CreatedOn())
 	})
 	// This callback will be triggered every time an item
