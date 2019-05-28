@@ -149,6 +149,7 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 
 	// Cache values so we don't keep blocking the mutex.
 	//expDur := table.cleanupInterval
+	cleanupTime := table.cleanupTime
 	addedItem := table.addedItem
 	table.Unlock()
 
@@ -158,7 +159,7 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 	}
 
 	// If we haven't set up any expiration check timer or found a more imminent item.
-	if item.lifeSpan > 0 && (table.cleanupTime.IsZero() || time.Now().Add(item.lifeSpan).Before(table.cleanupTime)) {
+	if item.lifeSpan > 0 && (cleanupTime.IsZero() || time.Now().Add(item.lifeSpan).Before(cleanupTime)) {
 		table.expirationCheck()
 	}
 }
