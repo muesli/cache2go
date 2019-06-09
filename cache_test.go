@@ -297,7 +297,10 @@ func TestCallbacks(t *testing.T) {
 	var m sync.Mutex
 	addedKey := ""
 	removedKey := ""
+	calledAddedItem := false
+	calledRemoveItem := false
 	expired := false
+	calledExpired := false
 
 	// setup a cache with AddedItem & SetAboutToDelete handlers configured
 	table := Cache("testCallbacks")
@@ -306,12 +309,22 @@ func TestCallbacks(t *testing.T) {
 		addedKey = item.Key().(string)
 		m.Unlock()
 	})
+	table.SetAddedItemCallback(func(item *CacheItem) {
+		m.Lock()
+		calledAddedItem = true
+		m.Unlock()
+	})
 	table.SetAboutToDeleteItemCallback(func(item *CacheItem) {
 		m.Lock()
 		removedKey = item.Key().(string)
 		m.Unlock()
 	})
 
+	table.SetAboutToDeleteItemCallback(func(item *CacheItem) {
+		m.Lock()
+		calledRemoveItem = true
+		m.Unlock()
+	})
 	// add an item to the cache and setup its AboutToExpire handler
 	i := table.Add(k, 500*time.Millisecond, v)
 	i.SetAboutToExpireCallback(func(key interface{}) {
@@ -320,22 +333,122 @@ func TestCallbacks(t *testing.T) {
 		m.Unlock()
 	})
 
+	i.SetAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
+		calledExpired = true
+		m.Unlock()
+	})
+
 	// verify the AddedItem handler works
 	time.Sleep(250 * time.Millisecond)
 	m.Lock()
-	if addedKey != k {
+	if addedKey == k && !calledAddedItem {
 		t.Error("AddedItem callback not working")
+	}
+	m.Unlock()
+	// verify the AboutToDelete handler works
+	time.Sleep(500 * time.Millisecond)
+	m.Lock()
+	if removedKey == k && !calledRemoveItem {
+		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
+	}
+	// verify the AboutToExpire handler works
+	if expired && !calledExpired {
+		t.Error("AboutToExpire callback not working")
+	}
+	m.Unlock()
+
+}
+
+func TestCallbackQueue(t *testing.T) {
+
+	var m sync.Mutex
+	addedKey := ""
+	addedkeyCallback2 := ""
+	secondCallbackResult := "second"
+	removedKey := ""
+	removedKeyCallback := ""
+	expired := false
+	calledExpired := false
+	// setup a cache with AddedItem & SetAboutToDelete handlers configured
+	table := Cache("testCallbacks")
+
+	// test callback queue
+	table.AddAddedItemCallback(func(item *CacheItem) {
+		m.Lock()
+		addedKey = item.Key().(string)
+		m.Unlock()
+	})
+	table.AddAddedItemCallback(func(item *CacheItem) {
+		m.Lock()
+		addedkeyCallback2 = secondCallbackResult
+		m.Unlock()
+	})
+
+	table.AddAboutToDeleteItemCallback(func(item *CacheItem) {
+		m.Lock()
+		removedKey = item.Key().(string)
+		m.Unlock()
+	})
+
+	table.AddAboutToDeleteItemCallback(func(item *CacheItem) {
+		m.Lock()
+		removedKeyCallback = secondCallbackResult
+		m.Unlock()
+	})
+
+	i := table.Add(k, 500*time.Millisecond, v)
+	i.AddAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
+		expired = true
+		m.Unlock()
+	})
+
+	i.AddAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
+		calledExpired = true
+		m.Unlock()
+	})
+	time.Sleep(250 * time.Millisecond)
+	m.Lock()
+	if addedKey != k && addedkeyCallback2 != secondCallbackResult {
+		t.Error("AddedItem callback queue not working")
+	}
+	m.Unlock()
+	time.Sleep(500 * time.Millisecond)
+	m.Lock()
+	if removedKey != k && removedKeyCallback != secondCallbackResult {
+		t.Error("Item removed callback queue not working")
+	}
+	m.Unlock()
+	// test removeing of the callbacks
+	table.RemoveAddedItemCallbacks()
+	table.RemoveAboutToDeleteItemCallback()
+	secondItemKey := "itemKey02"
+	expired = false
+	i = table.Add(secondItemKey, 500*time.Millisecond, v)
+	i.SetAboutToExpireCallback(func(key interface{}) {
+		m.Lock()
+		expired = true
+		m.Unlock()
+	})
+	i.RemoveAboutToExpireCallback()
+	//verify if the callbacks were removed
+	time.Sleep(250 * time.Millisecond)
+	m.Lock()
+	if addedKey == secondItemKey {
+		t.Error("AddedItemCallbacks were not removed")
 	}
 	m.Unlock()
 
 	// verify the AboutToDelete handler works
 	time.Sleep(500 * time.Millisecond)
 	m.Lock()
-	if removedKey != k {
-		t.Error("AboutToDeleteItem callback not working:" + k + "_" + removedKey)
+	if removedKey == secondItemKey {
+		t.Error("AboutToDeleteItem not removed")
 	}
 	// verify the AboutToExpire handler works
-	if !expired {
+	if !expired && !calledExpired {
 		t.Error("AboutToExpire callback not working")
 	}
 	m.Unlock()

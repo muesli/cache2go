@@ -32,7 +32,7 @@ type CacheItem struct {
 	accessCount int64
 
 	// Callback method triggered right before removing the item from the cache
-	aboutToExpire func(key interface{})
+	aboutToExpire []func(key interface{})
 }
 
 // NewCacheItem returns a newly created CacheItem.
@@ -102,7 +102,24 @@ func (item *CacheItem) Data() interface{} {
 // SetAboutToExpireCallback configures a callback, which will be called right
 // before the item is about to be removed from the cache.
 func (item *CacheItem) SetAboutToExpireCallback(f func(interface{})) {
+	if len(item.aboutToExpire) > 0 {
+		item.RemoveAboutToExpireCallback()
+	}
 	item.Lock()
 	defer item.Unlock()
-	item.aboutToExpire = f
+	item.aboutToExpire = append(item.aboutToExpire, f)
+}
+
+// AddAboutToExpireCallback appends a new callback to the AboutToExpire queue
+func (item *CacheItem) AddAboutToExpireCallback(f func(interface{})) {
+	item.Lock()
+	defer item.Unlock()
+	item.aboutToExpire = append(item.aboutToExpire, f)
+}
+
+// RemoveAboutToExpireCallback empties the about to expire callback queue
+func (item *CacheItem) RemoveAboutToExpireCallback() {
+	item.Lock()
+	defer item.Unlock()
+	item.aboutToExpire = nil
 }
