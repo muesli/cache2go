@@ -361,7 +361,6 @@ func TestCallbacks(t *testing.T) {
 }
 
 func TestCallbackQueue(t *testing.T) {
-
 	var m sync.Mutex
 	addedKey := ""
 	addedkeyCallback2 := ""
@@ -390,7 +389,6 @@ func TestCallbackQueue(t *testing.T) {
 		removedKey = item.Key().(string)
 		m.Unlock()
 	})
-
 	table.AddAboutToDeleteItemCallback(func(item *CacheItem) {
 		m.Lock()
 		removedKeyCallback = secondCallbackResult
@@ -403,25 +401,27 @@ func TestCallbackQueue(t *testing.T) {
 		expired = true
 		m.Unlock()
 	})
-
 	i.AddAboutToExpireCallback(func(key interface{}) {
 		m.Lock()
 		calledExpired = true
 		m.Unlock()
 	})
+
 	time.Sleep(250 * time.Millisecond)
 	m.Lock()
 	if addedKey != k && addedkeyCallback2 != secondCallbackResult {
 		t.Error("AddedItem callback queue not working")
 	}
 	m.Unlock()
+
 	time.Sleep(500 * time.Millisecond)
 	m.Lock()
 	if removedKey != k && removedKeyCallback != secondCallbackResult {
 		t.Error("Item removed callback queue not working")
 	}
 	m.Unlock()
-	// test removeing of the callbacks
+
+	// test removing of the callbacks
 	table.RemoveAddedItemCallbacks()
 	table.RemoveAboutToDeleteItemCallback()
 	secondItemKey := "itemKey02"
@@ -433,7 +433,8 @@ func TestCallbackQueue(t *testing.T) {
 		m.Unlock()
 	})
 	i.RemoveAboutToExpireCallback()
-	//verify if the callbacks were removed
+
+	// verify if the callbacks were removed
 	time.Sleep(250 * time.Millisecond)
 	m.Lock()
 	if addedKey == secondItemKey {
