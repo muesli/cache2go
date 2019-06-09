@@ -247,7 +247,7 @@ func TestDataLoader(t *testing.T) {
 	})
 
 	// make sure data-loader works as expected and handles unloadable keys
-	p, err := table.Value("nil")
+	_, err := table.Value("nil")
 	if err == nil || table.Exists("nil") {
 		t.Error("Error validating data loader for nil values")
 	}
@@ -256,7 +256,7 @@ func TestDataLoader(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		key := k + strconv.Itoa(i)
 		vp := k + key
-		p, err = table.Value(key)
+		p, err := table.Value(key)
 		if err != nil || p == nil || p.Data().(string) != vp {
 			t.Error("Error validating data loader")
 		}
