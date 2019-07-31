@@ -54,6 +54,28 @@ func TestCache(t *testing.T) {
 	}
 }
 
+func TestRemoveCache(t *testing.T) {
+	// add an expiring item after a non-expiring one to
+	// trigger expirationCheck iterating over non-expiring items
+	table := Cache("testCache")
+	table.Add(k+"_1", 0*time.Second, v)
+	table.Add(k+"_2", 1*time.Minute, v)
+
+	RemoveCache("testCache")
+
+	//re-get the cache
+	table = Cache("testCache")
+	// check if both items are still there
+	p, err := table.Value(k + "_1")
+	if err == nil || p != nil {
+		t.Error("Error retrieving non-existed data from cache", err)
+	}
+	p, err = table.Value(k + "_2")
+	if err == nil || p != nil {
+		t.Error("Error retrieving non-existed data from cache", err)
+	}
+}
+
 func TestCacheExpire(t *testing.T) {
 	table := Cache("testCache")
 

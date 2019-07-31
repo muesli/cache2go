@@ -40,3 +40,17 @@ func Cache(table string) *CacheTable {
 
 	return t
 }
+
+// RemoveCache flushes and removes the table if it exists.
+func RemoveCache(table string) {
+	mutex.RLock()
+	defer mutex.RUnlock()
+
+	// since we remove it, its cache is unnecessary ao we flush it.
+	cacheTable := cache[table]
+	if cacheTable != nil {
+		cacheTable.Flush()
+	}
+
+	delete(cache, table)
+}
