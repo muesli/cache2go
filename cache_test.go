@@ -78,6 +78,8 @@ func TestRemoveCache(t *testing.T) {
 }
 
 func TestAllTables(t *testing.T) {
+	ResetCache()
+
 	// create some tables.
 	Cache("testCache1")
 	Cache("testCache2")
@@ -85,6 +87,7 @@ func TestAllTables(t *testing.T) {
 	Cache("testCache1")
 	Cache("testCache2")
 	Cache("testCache3")
+
 	RemoveCache("testCache1")
 
 	tables := AllTables()
