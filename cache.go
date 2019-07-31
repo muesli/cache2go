@@ -54,3 +54,17 @@ func RemoveCache(table string) {
 
 	delete(cache, table)
 }
+
+// AllTables returns name list of all tables.
+func AllTables() []string {
+	mutex.RLock()
+	defer mutex.RUnlock()
+
+	var tables []string
+
+	for k := range cache {
+		tables = append(tables, k)
+	}
+
+	return tables
+}

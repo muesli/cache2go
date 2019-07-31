@@ -10,6 +10,7 @@ package cache2go
 import (
 	"bytes"
 	"log"
+	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -73,6 +74,28 @@ func TestRemoveCache(t *testing.T) {
 	p, err = table.Value(k + "_2")
 	if err == nil || p != nil {
 		t.Error("Error retrieving non-existed data from cache", err)
+	}
+}
+
+func TestAllTables(t *testing.T) {
+	// create some tables.
+	Cache("testCache1")
+	Cache("testCache2")
+	Cache("testCache3")
+	Cache("testCache1")
+	Cache("testCache2")
+	Cache("testCache3")
+	RemoveCache("testCache1")
+
+	tables := AllTables()
+
+	if len(tables) != 2 {
+		t.Errorf("Expect 2 tables but got %d", len(tables))
+	}
+
+	sort.Strings(tables)
+	if tables[0] != "testCache2" || tables[1] != "testCache3" {
+		t.Errorf("Expect testCache2 and testCache3 but got %v", tables)
 	}
 }
 
