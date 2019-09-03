@@ -9,6 +9,8 @@
 package cache2go
 
 import (
+	"log"
+	"os"
 	"sync"
 )
 
@@ -30,8 +32,9 @@ func Cache(table string) *CacheTable {
 		// Double check whether the table exists or not.
 		if !ok {
 			t = &CacheTable{
-				name:  table,
-				items: make(map[interface{}]*CacheItem),
+				name:   table,
+				items:  make(map[interface{}]*CacheItem),
+				logger: log.New(os.Stderr, "", 1),
 			}
 			cache[table] = t
 		}
