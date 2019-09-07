@@ -259,7 +259,7 @@ func (table *CacheTable) Exists(key interface{}) bool {
 	return ok
 }
 
-// NotFoundAdd tests whether an item not found in the cache. Unlike the Exists
+// NotFoundAdd checks whether an item not found in the cache. Unlike the Exists
 // method this also adds data if the key could not be found.
 func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, data interface{}) bool {
 	table.Lock()
