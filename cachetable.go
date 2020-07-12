@@ -262,13 +262,14 @@ func (table *CacheTable) Exists(key interface{}) bool {
 // NotFoundAdd checks whether an item is not yet cached. Unlike the Exists
 // method this also adds data if the key could not be found.
 func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, data interface{}) bool {
-	table.Lock()
+	table.RLock()
 
 	if _, ok := table.items[key]; ok {
-		table.Unlock()
+		table.RUnlock()
 		return false
 	}
-
+	table.RUnlock()
+	table.Lock()
 	item := NewCacheItem(key, lifeSpan, data)
 	table.addInternal(item)
 
