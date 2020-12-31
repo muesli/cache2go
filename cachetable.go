@@ -187,7 +187,7 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 
 	// If we haven't set up any expiration check timer or found a more imminent item.
 	if item.lifeSpan > 0 && (expDur == 0 || item.lifeSpan < expDur) {
-		table.expirationCheck()
+		go table.expirationCheck()
 	}
 }
 
