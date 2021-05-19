@@ -3,7 +3,7 @@
 [![Latest Release](https://img.shields.io/github/release/muesli/cache2go.svg)](https://github.com/muesli/cache2go/releases)
 [![Build Status](https://github.com/muesli/cache2go/workflows/build/badge.svg)](https://github.com/muesli/cache2go/actions)
 [![Coverage Status](https://coveralls.io/repos/github/muesli/cache2go/badge.svg?branch=master)](https://coveralls.io/github/muesli/cache2go?branch=master)
-[![Go ReportCard](http://goreportcard.com/badge/muesli/cache2go)](http://goreportcard.com/report/muesli/cache2go)
+[![Go ReportCard](https://goreportcard.com/badge/muesli/cache2go)](https://goreportcard.com/report/muesli/cache2go)
 [![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://pkg.go.dev/github.com/muesli/cache2go)
 
 Concurrency-safe golang caching library with expiration capabilities.
@@ -11,7 +11,7 @@ Concurrency-safe golang caching library with expiration capabilities.
 ## Installation
 
 Make sure you have a working Go environment (Go 1.2 or higher is required).
-See the [install instructions](http://golang.org/doc/install.html).
+See the [install instructions](https://golang.org/doc/install.html).
 
 To install cache2go, simply run:
 
