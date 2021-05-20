@@ -30,6 +30,8 @@ type CacheTable struct {
 
 	// The logger used for this table.
 	logger *log.Logger
+	// if check expires by createdOn
+	expiresBycreatedOn bool
 
 	// Callback method triggered when trying to load a non-existing key.
 	loadData func(key interface{}, args ...interface{}) *CacheItem
@@ -122,6 +124,13 @@ func (table *CacheTable) SetLogger(logger *log.Logger) {
 	table.logger = logger
 }
 
+// SetExpirebycreatedOn sets if expiration Check by the createdOn
+func (table *CacheTable) SetExpirebycreatedOn(expirebycreatedon bool) {
+	table.Lock()
+	defer table.Unlock()
+	table.expiresBycreatedOn = expirebycreatedon
+}
+
 // Expiration check loop, triggered by a self-adjusting timer.
 func (table *CacheTable) expirationCheck() {
 	table.Lock()
@@ -143,18 +152,25 @@ func (table *CacheTable) expirationCheck() {
 		item.RLock()
 		lifeSpan := item.lifeSpan
 		accessedOn := item.accessedOn
+		createdOn := item.createdOn
 		item.RUnlock()
 
 		if lifeSpan == 0 {
 			continue
 		}
-		if now.Sub(accessedOn) >= lifeSpan {
+
+		checkfield := accessedOn
+		if table.expiresBycreatedOn {
+			checkfield = createdOn
+		}
+
+		if now.Sub(checkfield) >= lifeSpan {
 			// Item has excessed its lifespan.
 			table.deleteInternal(key)
 		} else {
 			// Find the item chronologically closest to its end-of-lifespan.
-			if smallestDuration == 0 || lifeSpan-now.Sub(accessedOn) < smallestDuration {
-				smallestDuration = lifeSpan - now.Sub(accessedOn)
+			if smallestDuration == 0 || lifeSpan-now.Sub(checkfield) < smallestDuration {
+				smallestDuration = lifeSpan - now.Sub(checkfield)
 			}
 		}
 	}
