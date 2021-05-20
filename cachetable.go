@@ -208,6 +208,13 @@ func (table *CacheTable) Add(key interface{}, lifeSpan time.Duration, data inter
 	return item
 }
 
+func (table *CacheTable) addItem(item *CacheItem) *CacheItem {
+	table.Lock()
+	table.addInternal(item)
+
+	return item
+}
+
 func (table *CacheTable) deleteInternal(key interface{}) (*CacheItem, error) {
 	r, ok := table.items[key]
 	if !ok {
@@ -293,7 +300,7 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 	if loadData != nil {
 		item := loadData(key, args...)
 		if item != nil {
-			table.Add(key, item.lifeSpan, item.data)
+			table.addItem(item)
 			return item, nil
 		}
 
@@ -315,6 +322,26 @@ func (table *CacheTable) Flush() {
 	if table.cleanupTimer != nil {
 		table.cleanupTimer.Stop()
 	}
+}
+
+// DeleteAll deletes all items from this cache table and call aboutToDeleteItem,aboutToExpire
+func (table *CacheTable) DeleteAll() {
+	table.Foreach(func(key interface{}, item *CacheItem) {
+		// Trigger callbacks before deleting an item from cache.
+		if table.aboutToDeleteItem != nil {
+			table.aboutToDeleteItem(item)
+		}
+
+		item.RLock()
+		defer item.RUnlock()
+		if item.aboutToExpire != nil {
+			item.aboutToExpire(key)
+		}
+	})
+
+	table.log("Remove all table", table.name)
+
+	table.Flush()
 }
 
 // CacheItemPair maps key to access counter
