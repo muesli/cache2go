@@ -323,7 +323,7 @@ type CacheItemPair struct {
 	AccessCount int64
 }
 
-// CacheItemPairList is a slice of CacheIemPairs that implements sort.
+// CacheItemPairList is a slice of CacheItemPairs that implements sort.
 // Interface to sort by AccessCount.
 type CacheItemPairList []CacheItemPair
 
