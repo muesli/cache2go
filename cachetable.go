@@ -181,10 +181,8 @@ func (table *CacheTable) addInternal(item *CacheItem) {
 	table.Unlock()
 
 	// Trigger callback after adding an item to cache.
-	if addedItem != nil {
-		for _, callback := range addedItem {
-			callback(item)
-		}
+	for _, callback := range addedItem {
+		callback(item)
 	}
 
 	// If we haven't set up any expiration check timer or found a more imminent item.
@@ -219,18 +217,14 @@ func (table *CacheTable) deleteInternal(key interface{}) (*CacheItem, error) {
 	table.Unlock()
 
 	// Trigger callbacks before deleting an item from cache.
-	if aboutToDeleteItem != nil {
-		for _, callback := range aboutToDeleteItem {
-			callback(r)
-		}
+	for _, callback := range aboutToDeleteItem {
+		callback(r)
 	}
 
 	r.RLock()
 	defer r.RUnlock()
-	if r.aboutToExpire != nil {
-		for _, callback := range r.aboutToExpire {
-			callback(key)
-		}
+	for _, callback := range r.aboutToExpire {
+		callback(key)
 	}
 
 	table.Lock()
