@@ -61,6 +61,13 @@ func (item *CacheItem) KeepAlive() {
 	item.accessCount++
 }
 
+// AddAccessCount only add one access count.
+func (item *CacheItem) AddAccessCount() {
+	item.Lock()
+	defer item.Unlock()
+	item.accessCount++
+}
+
 // LifeSpan returns this item's expiration duration.
 func (item *CacheItem) LifeSpan() time.Duration {
 	// immutable

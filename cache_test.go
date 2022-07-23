@@ -168,6 +168,49 @@ func TestCacheKeepAlive(t *testing.T) {
 	}
 }
 
+func TestPeek(t *testing.T) {
+	// add an expiring item
+	table := Cache("TestPeek")
+	_ = table.Add(k, 250*time.Millisecond, v)
+	_ = table.Add(k+"_", 250*time.Millisecond, v)
+
+	// test peek item
+	time.Sleep(150 * time.Millisecond)
+	p, _ := table.Peek(k)
+	if p.Data() != v {
+		t.Error("Error peek item")
+	}
+
+	// test k is expired
+	time.Sleep(150 * time.Millisecond)
+	if table.Exists(k) {
+		t.Error("Error peek but expired time updated")
+	}
+
+	// test peek nil
+	_, err := table.Peek(k)
+	if err != ErrKeyNotFound {
+		t.Error("Error peek nil value but not return ErrKeyNotFound")
+	}
+
+	// test DataLoader
+	table.SetDataLoader(func(key interface{}, args ...interface{}) *CacheItem {
+		if key == k {
+			return NewCacheItem(key, 150*time.Millisecond, "new value")
+		}
+		return nil
+	})
+	p, _ = table.Peek(k)
+	if p.Data() != "new value" {
+		t.Error("Error peek DataLoader callback did not take effect")
+	}
+
+	_, err = table.Peek(k + "_")
+	if err != ErrKeyNotFoundOrLoadable {
+		t.Error("Error peek DataLoader err")
+	}
+}
+
 func TestDelete(t *testing.T) {
 	// add an item to the cache
 	table := Cache("testDelete")
