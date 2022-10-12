@@ -303,6 +303,33 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 	return nil, ErrKeyNotFound
 }
 
+// Peek returns an item from the cache, but does not mark its active status, i.e. does not update the active time.
+// You can also pass additional arguments to your DataLoader callback function.
+func (table *CacheTable) Peek(key interface{}, args ...interface{}) (*CacheItem, error) {
+	table.RLock()
+	r, ok := table.items[key]
+	loadData := table.loadData
+	table.RUnlock()
+
+	if ok {
+		r.AddAccessCount()
+		return r, nil
+	}
+
+	// Item doesn't exist in cache. Try and fetch it with a data-loader.
+	if loadData != nil {
+		item := loadData(key, args...)
+		if item != nil {
+			table.Add(key, item.lifeSpan, item.data)
+			return item, nil
+		}
+
+		return nil, ErrKeyNotFoundOrLoadable
+	}
+
+	return nil, ErrKeyNotFound
+}
+
 // Flush deletes all items from this cache table.
 func (table *CacheTable) Flush() {
 	table.Lock()
