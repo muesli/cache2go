@@ -28,6 +28,9 @@ type CacheTable struct {
 	// Current timer duration.
 	cleanupInterval time.Duration
 
+	// Decision whether to cleanup based on access time or creation
+	creationBasedCleanup bool
+
 	// The logger used for this table.
 	logger *log.Logger
 
@@ -74,6 +77,13 @@ func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
 	table.Lock()
 	defer table.Unlock()
 	table.addedItem = append(table.addedItem, f)
+}
+
+// SetCreationBasedCleanup sets if expiration Check by the createdOn
+func (table *CacheTable) SetCreationBasedCleanup(creationBasedCleanup bool) {
+	table.Lock()
+	defer table.Unlock()
+	table.creationBasedCleanup = creationBasedCleanup
 }
 
 //AddAddedItemCallback appends a new callback to the addedItem queue
@@ -142,19 +152,24 @@ func (table *CacheTable) expirationCheck() {
 		// Cache values so we don't keep blocking the mutex.
 		item.RLock()
 		lifeSpan := item.lifeSpan
-		accessedOn := item.accessedOn
+
+		referenceTime := item.accessedOn
+		if table.creationBasedCleanup {
+			referenceTime = item.createdOn
+		}
+
 		item.RUnlock()
 
 		if lifeSpan == 0 {
 			continue
 		}
-		if now.Sub(accessedOn) >= lifeSpan {
+		if now.Sub(referenceTime) >= lifeSpan {
 			// Item has excessed its lifespan.
 			table.deleteInternal(key)
 		} else {
 			// Find the item chronologically closest to its end-of-lifespan.
-			if smallestDuration == 0 || lifeSpan-now.Sub(accessedOn) < smallestDuration {
-				smallestDuration = lifeSpan - now.Sub(accessedOn)
+			if smallestDuration == 0 || lifeSpan-now.Sub(referenceTime) < smallestDuration {
+				smallestDuration = lifeSpan - now.Sub(referenceTime)
 			}
 		}
 	}

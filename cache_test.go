@@ -83,6 +83,42 @@ func TestCacheExpire(t *testing.T) {
 	}
 }
 
+func TestCacheExpireCreationBasedCleanup(t *testing.T) {
+	table := Cache("testCache")
+	table.SetCreationBasedCleanup(true)
+
+	table.Add(k+"_1", 250*time.Millisecond, v+"_1")
+	table.Add(k+"_2", 200*time.Millisecond, v+"_2")
+
+	time.Sleep(100 * time.Millisecond)
+
+	// check key `1` is still alive
+	_, err := table.Value(k + "_1")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	// check key `2` is still alive
+	_, err = table.Value(k + "_2")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	time.Sleep(150 * time.Millisecond)
+
+	// check key `1` again, it should still be alive since we just accessed it
+	_, err = table.Value(k + "_1")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	// check key `2`, it should have been removed by now
+	_, err = table.Value(k + "_2")
+	if err == nil {
+		t.Error("Found key which should have been expired by now")
+	}
+}
+
 func TestExists(t *testing.T) {
 	// add an expiring item
 	table := Cache("testExists")
@@ -163,6 +199,24 @@ func TestCacheKeepAlive(t *testing.T) {
 
 	// check it expires eventually
 	time.Sleep(300 * time.Millisecond)
+	if table.Exists(k) {
+		t.Error("Error expiring item after keeping it alive")
+	}
+}
+
+func TestCacheKeepAliveHasNotEffectByCreationBasedCleanup(t *testing.T) {
+	// add an expiring item
+	table := Cache("testKeepAlive")
+	table.SetCreationBasedCleanup(true)
+
+	p := table.Add(k, 250*time.Millisecond, v)
+
+	// keep it alive before it expires
+	time.Sleep(100 * time.Millisecond)
+	p.KeepAlive()
+
+	// check it's still alive after it was initially supposed to expire
+	time.Sleep(151 * time.Millisecond)
 	if table.Exists(k) {
 		t.Error("Error expiring item after keeping it alive")
 	}
