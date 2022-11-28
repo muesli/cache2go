@@ -56,6 +56,14 @@ func main() {
 		fmt.Println("Error retrieving value from cache:", err)
 	}
 
+	// You can also retrieve Value without affecting it's keep alive
+	res, err := cache.ValueOnly("someKey")
+	if err == nil {
+		fmt.Println("Found value in cache:", res.Data().(*myStruct).text)
+	} else {
+		fmt.Println("Error retrieving value from cache:", err)
+	}
+
 	// Wait for the item to expire in cache.
 	time.Sleep(6 * time.Second)
 	res, err = cache.Value("someKey")

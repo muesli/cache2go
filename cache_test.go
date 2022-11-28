@@ -59,11 +59,18 @@ func TestCacheExpire(t *testing.T) {
 
 	table.Add(k+"_1", 250*time.Millisecond, v+"_1")
 	table.Add(k+"_2", 200*time.Millisecond, v+"_2")
+	table.Add(k+"_3", 200*time.Millisecond, v+"_3")
 
 	time.Sleep(100 * time.Millisecond)
 
 	// check key `1` is still alive
 	_, err := table.Value(k + "_1")
+	if err != nil {
+		t.Error("Error retrieving value from cache:", err)
+	}
+
+	// check key `3`: valueOnly does not extend keep alive
+	_, err = table.ValueOnly(k + "_3")
 	if err != nil {
 		t.Error("Error retrieving value from cache:", err)
 	}
@@ -78,6 +85,12 @@ func TestCacheExpire(t *testing.T) {
 
 	// check key `2`, it should have been removed by now
 	_, err = table.Value(k + "_2")
+	if err == nil {
+		t.Error("Found key which should have been expired by now")
+	}
+
+	// check key `3`, it should have been removed by now
+	_, err = table.Value(k + "_3")
 	if err == nil {
 		t.Error("Found key which should have been expired by now")
 	}
