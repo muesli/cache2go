@@ -76,7 +76,7 @@ func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
 	table.addedItem = append(table.addedItem, f)
 }
 
-//AddAddedItemCallback appends a new callback to the addedItem queue
+// AddAddedItemCallback appends a new callback to the addedItem queue
 func (table *CacheTable) AddAddedItemCallback(f func(*CacheItem)) {
 	table.Lock()
 	defer table.Unlock()
@@ -278,6 +278,16 @@ func (table *CacheTable) NotFoundAdd(key interface{}, lifeSpan time.Duration, da
 // Value returns an item from the cache and marks it to be kept alive. You can
 // pass additional arguments to your DataLoader callback function.
 func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem, error) {
+	return table.valueInternal(key, true, args)
+}
+
+// ValueOnly returns an item from the cache and does not mark it to be kept alive. You can
+// pass additional arguments to your DataLoader callback function.
+func (table *CacheTable) ValueOnly(key interface{}, args ...interface{}) (*CacheItem, error) {
+	return table.valueInternal(key, false, args)
+}
+
+func (table *CacheTable) valueInternal(key interface{}, updateKeepAlive bool, args ...interface{}) (*CacheItem, error) {
 	table.RLock()
 	r, ok := table.items[key]
 	loadData := table.loadData
@@ -285,7 +295,9 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 
 	if ok {
 		// Update access counter and timestamp.
-		r.KeepAlive()
+		if updateKeepAlive {
+			r.KeepAlive()
+		}
 		return r, nil
 	}
 
