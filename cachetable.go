@@ -293,7 +293,10 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 	if loadData != nil {
 		item := loadData(key, args...)
 		if item != nil {
-			table.Add(key, item.lifeSpan, item.data)
+      // Add loaded item to cache
+      table.Lock()
+      table.addInternal(item)
+
 			return item, nil
 		}
 
