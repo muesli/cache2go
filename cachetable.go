@@ -76,7 +76,7 @@ func (table *CacheTable) SetAddedItemCallback(f func(*CacheItem)) {
 	table.addedItem = append(table.addedItem, f)
 }
 
-//AddAddedItemCallback appends a new callback to the addedItem queue
+// AddAddedItemCallback appends a new callback to the addedItem queue
 func (table *CacheTable) AddAddedItemCallback(f func(*CacheItem)) {
 	table.Lock()
 	defer table.Unlock()
@@ -208,6 +208,12 @@ func (table *CacheTable) Add(key interface{}, lifeSpan time.Duration, data inter
 	return item
 }
 
+func (table *CacheTable) AddByItem(item *CacheItem) *CacheItem {
+	table.Lock()
+	table.addInternal(item)
+	return item
+}
+
 func (table *CacheTable) deleteInternal(key interface{}) (*CacheItem, error) {
 	r, ok := table.items[key]
 	if !ok {
@@ -293,7 +299,7 @@ func (table *CacheTable) Value(key interface{}, args ...interface{}) (*CacheItem
 	if loadData != nil {
 		item := loadData(key, args...)
 		if item != nil {
-			table.Add(key, item.lifeSpan, item.data)
+			table.AddByItem(item)
 			return item, nil
 		}
 
